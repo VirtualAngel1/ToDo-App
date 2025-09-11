@@ -1,24 +1,28 @@
-require('dotenv').config();
+import 'dotenv/config';
 
-const express       = require('express');
-const cors          = require('cors');
-const jwt           = require('jsonwebtoken');
-const path          = require('path');
-const morgan        = require('morgan');
-const mongoose      = require('mongoose');
-const { body, validationResult } = require('express-validator');
-const Task          = require('./models/Task');
+import express from 'express';
+import cors from 'cors';
+import jwt from 'jsonwebtoken';
+import morgan from 'morgan';
+import mongoose from 'mongoose';
+import { body, validationResult } from 'express-validator';
+import Task from './models/Task.js';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
-app.use(express.static(path.join(__dirname, '../client')));
+app.use(express.static(join(__dirname, '../client')));
 
-const PORT       = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'default_secret';
-const MONGO_URI  = process.env.MONGO_URI || 'mongodb://localhost:27017/todo-app';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/todo-app';
 
 if (process.env.NODE_ENV !== 'test') {
   mongoose.connect(MONGO_URI)
@@ -56,7 +60,7 @@ function authenticate(req, res, next) {
 
 app.get('/api/tasks', authenticate, async (req, res, next) => {
   try {
-    const tasks = await Task.find();
+    const tasks = await Task.find({ owner: req.user.username });
     res.json(tasks);
   } catch (err) {
     next(err);
@@ -73,7 +77,10 @@ app.post(
       return res.status(400).json({ errors: errors.array() });
     }
     try {
-      const task = new Task({ text: req.body.text });
+      const task = new Task({
+        text: req.body.text,
+        owner: req.user.username
+      });
       await task.save();
       res.status(201).json(task);
     } catch (err) {
@@ -92,8 +99,8 @@ app.put(
       return res.status(400).json({ errors: errors.array() });
     }
     try {
-      const task = await Task.findByIdAndUpdate(
-        req.params.id,
+      const task = await Task.findOneAndUpdate(
+        { _id: req.params.id, owner: req.user.username },
         req.body,
         { new: true, runValidators: true }
       );
@@ -107,9 +114,12 @@ app.put(
 
 app.delete('/api/tasks/:id', authenticate, async (req, res, next) => {
   try {
-    const result = await Task.findByIdAndDelete(req.params.id);
+    const result = await Task.findOneAndDelete({
+      _id: req.params.id,
+      owner: req.user.username
+    });
     if (!result) return res.status(404).json({ error: 'Not found' });
-    res.status(204).end();
+    res.json({ message: 'Task deleted' });
   } catch (err) {
     next(err);
   }
@@ -120,4 +130,4 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal Server Error' });
 });
 
-module.exports = app;
+export default app;

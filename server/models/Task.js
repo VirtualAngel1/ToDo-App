@@ -1,16 +1,28 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
-const taskSchema = new mongoose.Schema({
-  text: {
-    type: String,
-    required: [true, 'Task text is required'],
-    minlength: [1, 'Task text must not be empty'],
-    trim: true
+const { Schema } = mongoose;
+
+const taskSchema = new Schema(
+  {
+    text: {
+      type: String,
+      required: [true, 'Task text is required'],
+      minlength: [1, 'Task text must not be empty'],
+      trim: true
+    },
+    completed: {
+      type: Boolean,
+      default: false
+    },
+    owner: {
+      type: String,
+      required: [true, 'Task owner is required'],
+      index: true
+    }
   },
-  completed: {
-    type: Boolean,
-    default: false
-  }
-}, { timestamps: true });
+  { timestamps: true }
+);
 
-module.exports = mongoose.model('Task', taskSchema);
+const Task = mongoose.model('Task', taskSchema);
+
+export default Task;

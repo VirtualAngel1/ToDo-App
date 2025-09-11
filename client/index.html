@@ -8,9 +8,9 @@
 </head>
 <body>
   <main class="todo-app" role="application" aria-label="To-Do List Application">
-    <h1>Login</h1>
-
-    <section id="auth-section" aria-label="User Authentication">
+    
+    <section id="auth-section" style="display: block;" aria-label="User Authentication">
+      <h1>Login</h1>
       <form id="login-form">
         <input type="text" id="username" placeholder="Username" required aria-label="Username" />
         <input type="password" id="password" placeholder="Password" required aria-label="Password" />
@@ -18,7 +18,9 @@
       </form>
     </section>
 
-    <section id="task-section" hidden aria-label="Task Management">
+    <section id="task-section" style="display: none;" aria-label="Task Management">
+      <button id="logout-btn">Logout</button>
+      
       <form id="task-form">
         <input type="text" id="task-input" placeholder="Enter a task..." required aria-label="Task input" />
         <button type="submit">Add Task</button>
@@ -27,8 +29,9 @@
       <ul id="task-list" aria-live="polite">
       </ul>
     </section>
+    
   </main>
 
-  <script src="script.js"></script>
+  <script src="script.js" defer></script>
 </body>
 </html>
