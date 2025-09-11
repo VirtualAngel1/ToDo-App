@@ -1,0 +1,29 @@
+services:
+  app:
+    init: true
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=production
+      - JWT_SECRET=57575757575757575757575757575757
+      - MONGO_URI=mongodb://mongo:27017/todo-db
+    depends_on:
+      - mongo
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  mongo:
+    image: mongo:6
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:

@@ -34,6 +34,10 @@ if (process.env.NODE_ENV !== 'test') {
   });
 }
 
+app.get('/', (req, res) => {
+  res.send('ToDo API is running.');
+});
+
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', env: process.env.NODE_ENV });
 });
