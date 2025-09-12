@@ -30,6 +30,8 @@ body {
 }
 
 #auth-section {
+  display: flex;
+  justify-content: center;
   margin-bottom: 1rem;
 }
 
@@ -37,6 +39,8 @@ body {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  width: 100%;
+  max-width: 360px;
   margin-bottom: 1rem;
 }
 
@@ -50,7 +54,6 @@ body {
 }
 
 #login-form button {
-  flex: 0 0 auto;
   padding: 1.2rem 1rem;
 }
 
@@ -120,4 +123,43 @@ button:focus {
   padding: 0.4rem 0.6rem;
   font-size: 0.9rem;
   border-radius: 4px;
+}
+
+#task-list li.completed .title {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+@media (max-width: 600px) {
+  #login-form {
+    flex-direction: column;
+  }
+
+  #login-form input[type="text"],
+  #login-form input[type="password"],
+  #login-form button {
+    width: 100%;
+  }
+
+  .todo-app {
+    padding: 1rem;
+  }
+
+  #task-form {
+    flex-direction: column;
+  }
+
+  button {
+    width: 100%;
+  }
+
+  #task-list li {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  #task-list button {
+    width: 100%;
+    margin-top: 0.3rem;
+  }
 }
