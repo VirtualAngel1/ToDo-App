@@ -12,5 +12,11 @@ services:
     envVars:
       - key: NEW_RELIC_LICENSE_KEY
         fromSecret: newrelic-license-key
+      - key: NEW_RELIC_APP_NAME
+        value: To-Do App
+      - key: NEW_RELIC_LOG
+        value: stdout
+      - key: NEW_RELIC_LOG_LEVEL
+        value: info
       - key: NODE_VERSION
         value: "20"
