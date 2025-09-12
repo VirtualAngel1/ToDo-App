@@ -1,9 +1,16 @@
+secrets:
+  - name: newrelic-license-key
+
 services:
   - type: web
     name: todo-backend
-    env: docker
+    env: node
     branch: main
-    dockerfilePath: server/Dockerfile
+    buildCommand: cd server && npm ci
+    startCommand: cd server && npm start
+    runtime: node_20
     envVars:
       - key: NEW_RELIC_LICENSE_KEY
         fromSecret: newrelic-license-key
+      - key: NODE_VERSION
+        value: "20"
