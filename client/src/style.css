@@ -40,14 +40,19 @@ body {
 }
 
 #login-form input[type="text"],
-#login-form input[type="password"],
+#login-form input[type="password"] {
+  width: 100%;
+}
+
 #login-form button {
   width: 100%;
+  padding: 1.2rem 1rem;
 }
 
 #logout-button {
   width: 100%;
   margin-bottom: 1rem;
+  padding: 1.2rem 1rem;
 }
 
 #task-form {
@@ -110,48 +115,4 @@ button:focus {
   padding: 0.4rem 0.6rem;
   font-size: 0.9rem;
   border-radius: 4px;
-}
-
-#task-list li.completed .title {
-  text-decoration: line-through;
-  opacity: 0.6;
-}
-
-@media (min-width: 600px) {
-  #login-form {
-    flex-direction: row;
-    align-items: center;
-  }
-
-  #login-form input {
-    flex: 1;
-  }
-
-  #login-form button {
-    width: auto;
-  }
-}
-
-@media (max-width: 600px) {
-  .todo-app {
-    padding: 1rem;
-  }
-
-  #task-form {
-    flex-direction: column;
-  }
-
-  button {
-    width: 100%;
-  }
-
-  #task-list li {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  #task-list button {
-    width: 100%;
-    margin-top: 0.3rem;
-  }
 }
