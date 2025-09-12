@@ -1,4 +1,5 @@
-console.log('Node runtime version:', process.version)
+console.log('Node runtime:', process.version);
+console.log('NR key:', process.env.NEW_RELIC_LICENSE_KEY);
 
 import 'newrelic';
 import 'dotenv/config';
