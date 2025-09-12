@@ -1,5 +1,6 @@
-import 'dotenv/config';
+require('newrelic');
 
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import jwt from 'jsonwebtoken';
