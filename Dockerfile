@@ -9,7 +9,7 @@ COPY client/package*.json ./client/
 COPY client ./client
 RUN cd client && npm ci && npm run build
 
-FROM node:18-alpine
+FROM node:20-alpine
 WORKDIR /app
 
 COPY --from=builder /app/server ./server
