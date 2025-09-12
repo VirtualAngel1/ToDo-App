@@ -22,7 +22,7 @@ function TaskList({ authToken, onLogout }) {
     }
   }
 
-  const addTask = async (e) => {
+  const addTask = async e => {
     e.preventDefault()
     if (!text.trim()) return
 
@@ -56,7 +56,7 @@ function TaskList({ authToken, onLogout }) {
     }
   }
 
-  const deleteTask = async (id) => {
+  const deleteTask = async id => {
     try {
       await axios.delete(
         `${process.env.REACT_APP_API_URL}/api/tasks/${id}`,
@@ -99,14 +99,10 @@ function TaskList({ authToken, onLogout }) {
         {tasks.map(task => (
           <li key={task._id} className={task.completed ? 'completed' : ''}>
             <span className="title">{task.text}</span>
-            <button
-              onClick={() => toggleComplete(task._id, task.completed)}
-            >
+            <button onClick={() => toggleComplete(task._id, task.completed)}>
               {task.completed ? '↩︎' : '✅'}
             </button>
-            <button onClick={() => deleteTask(task._id)}>
-              ✕
-            </button>
+            <button onClick={() => deleteTask(task._id)}>✕</button>
           </li>
         ))}
       </ul>
