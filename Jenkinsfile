@@ -80,7 +80,7 @@ pipeline {
           archiveArtifacts artifacts: 'snyk-frontend.json,snyk-backend.json'
         }
         failure {
-          echo 'One or more Snyk scans failed—see the JSON reports.'
+          echo 'One or more Snyk scans failed, please view the JSON reports.'
         }
       }
     }
@@ -129,9 +129,9 @@ pipeline {
       }
     }
 
-stage('7: Monitoring & Alerting') {
+stage('7: Monitoring') {
   steps {
-    echo '📣 Posting Front-end deployment to New Relic...'
+    echo 'Posting Front-end deployment to New Relic...'
     sh """
       curl -s -X POST https://api.newrelic.com/v2/applications/${NEWRELIC_FRONTEND_APPID}/deployments.json \\
         -H 'Api-Key: ${NEWRELIC_LICENSE_KEY}' \\
@@ -145,7 +145,7 @@ stage('7: Monitoring & Alerting') {
         }'
     """
 
-    echo '📣 Posting Back-end deployment to New Relic...'
+    echo 'Posting Back-end deployment to New Relic...'
     sh """
       curl -s -X POST https://api.newrelic.com/v2/applications/${NEWRELIC_BACKEND_APPID}/deployments.json \\
         -H 'Api-Key: ${NEWRELIC_LICENSE_KEY}' \\
@@ -159,19 +159,19 @@ stage('7: Monitoring & Alerting') {
         }'
     """
 
-    echo '🔍 Verifying Front-end health...'
+    echo 'Verifying Front-end health...'
     script {
       def feStatus = sh(returnStatus: true, script: "curl -sSf ${SERVICE_URL_FRONTEND}/health || true")
-      echo feStatus == 0 ? '✅ Front-end healthy' : "🚨 Front-end health check failed (status=${feStatus})"
+      echo feStatus == 0 ? 'Front-end healthy.' : "Front-end health check failed (status=${feStatus})"
     }
 
-    echo '🔍 Verifying Back-end health...'
+    echo 'Verifying Back-end health...'
     script {
       def beStatus = sh(returnStatus: true, script: "curl -sSf ${SERVICE_URL_BACKEND} || true")
       if (beStatus != 0) {
-        error "🚨 Back-end health check failed (status=${beStatus})"
+        error "Back-end health check failed (status=${beStatus})"
       }
-      echo '✅ Back-end healthy'
+      echo 'Back-end healthy.'
         }
       }
     }
@@ -180,6 +180,6 @@ stage('7: Monitoring & Alerting') {
   post {
     success  { echo '✅ Pipeline completed successfully.' }
     unstable { echo '⚠️ Pipeline completed with warnings or test failures.' }
-    failure  { echo '❌ Pipeline failed—check console output and artifacts.' }
+    failure  { echo '❌ Pipeline failed, please check console output and artifacts.' }
   }
 }
