@@ -1,3 +1,5 @@
+console.log('Node runtime version:', process.version)
+
 import 'newrelic';
 import 'dotenv/config';
 import express from 'express';
