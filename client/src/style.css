@@ -35,17 +35,22 @@ body {
 
 #login-form {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 #login-form input[type="text"],
 #login-form input[type="password"] {
-  width: 100%;
+  flex: 1;
+  padding: 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
 }
 
 #login-form button {
-  width: 100%;
+  flex: 0 0 auto;
   padding: 1.2rem 1rem;
 }
 
