@@ -4,6 +4,11 @@
   "description": "Backend API for ToDo App",
   "main": "index.js",
   "type": "module",
+
+  "engines": {
+    "node": ">=20 <22"
+  },
+
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
