@@ -129,49 +129,27 @@ pipeline {
       }
     }
 
-stage('7: Monitoring') {
-  steps {
-    echo 'Posting Front-end deployment to New Relic...'
-    sh """
-      curl -s -X POST https://api.newrelic.com/v2/applications/${NEWRELIC_FRONTEND_APPID}/deployments.json \\
-        -H 'Api-Key: ${NEWRELIC_LICENSE_KEY}' \\
-        -H 'Content-Type: application/json' \\
-        -d '{
-          "deployment": {
-            "revision":"${env.GIT_COMMIT}",
-            "description":"Build #${env.BUILD_NUMBER} front-end deployed",
-            "user":"Chris"
-          }
-        }'
-    """
-
-    echo 'Posting Back-end deployment to New Relic...'
-    sh """
-      curl -s -X POST https://api.newrelic.com/v2/applications/${NEWRELIC_BACKEND_APPID}/deployments.json \\
-        -H 'Api-Key: ${NEWRELIC_LICENSE_KEY}' \\
-        -H 'Content-Type: application/json' \\
-        -d '{
-          "deployment": {
-            "revision":"${env.GIT_COMMIT}",
-            "description":"Build #${env.BUILD_NUMBER} back-end deployed",
-            "user":"Chris"
-          }
-        }'
-    """
-
-    echo 'Verifying Front-end health...'
-    script {
-      def feStatus = sh(returnStatus: true, script: "curl -sSf ${SERVICE_URL_FRONTEND}/health || true")
-      echo feStatus == 0 ? 'Front-end healthy.' : "Front-end health check failed (status=${feStatus})"
-    }
-
-    echo 'Verifying Back-end health...'
-    script {
-      def beStatus = sh(returnStatus: true, script: "curl -sSf ${SERVICE_URL_BACKEND} || true")
-      if (beStatus != 0) {
-        error "Back-end health check failed (status=${beStatus})"
+  stage('Monitoring') {
+    steps {
+      withCredentials([string(credentialsId: 'better-uptime-api-token', variable: 'BU_TOKEN')]) {
+        sh '''
+          set -e
+          URL="https://to-do-app-raw1.onrender.com"
+          RESPONSE=$(curl -s \
+            -H "Authorization: Token token=$BU_TOKEN" \
+            "https://api.betteruptime.com/v2/incidents?filter[status]=open&filter[monitor_url]=$URL")
+          COUNT=$(echo "$RESPONSE" | jq '.data | length')
+          if [ "$COUNT" -gt 0 ]; then
+            echo "Better Uptime reports $COUNT open incident(s)"
+            exit 1
+          fi
+        '''
       }
-      echo 'Back-end healthy.'
+    }
+    post {
+      failure {
+        slackSend channel: '#prod-alerts', color: 'danger',
+          message: "Monitoring failed: Open incidents in Better Uptime."
         }
       }
     }

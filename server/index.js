@@ -1,29 +1,3 @@
-console.log('DD_API_KEY present?', !!process.env.DD_API_KEY);
-
-process.env.DD_API_KEY = process.env.DD_API_KEY || '<fallback-api-key>'; 
-process.env.DD_SITE = 'ap2.datadoghq.com';
-process.env.DD_AGENTLESS = 'true';
-process.env.DD_SERVICE = 'to-do app';
-process.env.DD_ENV = 'production';
-process.env.DD_VERSION = '1.0.0';
-process.env.DD_TRACE_DEBUG = 'true';
-
-process.env.DD_AGENTLESS = 'true';
-
-import tracer from 'dd-trace';
-tracer.init({
-  url: process.env.DD_TRACE_AGENT_URL, 
-  flushInterval: 1000
-});
-
-console.log('dd-trace initialized (agentless AP2)')
-console.log('Datadog config:', {
-  apiKey: process.env.DD_API_KEY,
-  service: process.env.DD_SERVICE,
-  env: process.env.DD_ENV,
-  version: process.env.DD_VERSION
-});
-
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
@@ -54,6 +28,10 @@ if (process.env.NODE_ENV !== 'test') {
     .then(() => console.log('Connected to MongoDB'))
     .catch(err => console.error('MongoDB connection error:', err));
 
+app.get('/health', (_req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+    
   app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
   });

@@ -8,6 +8,7 @@ services:
     branch: main
     buildCommand: cd server && npm ci
     startCommand: cd server && node index.js
+    healthCheckPath: "/health"
     runtime: node_20
 envVars:
   - key: DD_API_KEY
