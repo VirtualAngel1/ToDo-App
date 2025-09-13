@@ -15,7 +15,6 @@ pipeline {
 stage('1: Build') {
   steps {
     script {
-      // --- Frontend ---
       echo '→ Building Front-end...'
       dir('client') {
         bat 'npm ci'
@@ -45,22 +44,46 @@ stage('1: Build') {
   }
 }
 
-
-    stage('2: Test') {
-      steps {
+stage('2: Test') {
+  steps {
+    script {
+      if (fileExists('client/package.json')) {
         echo '→ Testing Front-end...'
-        bat 'npm test'
-
-        echo '→ Testing Back-end...'
-        bat 'mvn -f backend/pom.xml test'
+        dir('client') {
+          bat 'npm ci'
+          bat 'npm test'
+        }
+      } else {
+        echo '↷ Skipping Front-end tests (client/package.json not found)'
       }
-      post {
-        always {
-          junit '**/test-results/*.xml'
+
+      if (fileExists('backend/pom.xml')) {
+        echo '→ Testing Back-end...'
+        bat 'mvn -f backend\\pom.xml test'
+      } else {
+        echo '↷ Skipping Back-end tests (backend/pom.xml not found)'
+      }
+    }
+  }
+  post {
+    always {
+      script {
+        if (fileExists('client/test-results')) {
+          junit 'client/test-results/*.xml'
+        } else {
+          echo '↷ No JUnit XML found for frontend tests'
+        }
+
+        if (fileExists('backend/target/surefire-reports')) {
           junit 'backend/target/surefire-reports/*.xml'
+        } else {
+          echo '↷ No JUnit XML found for backend tests'
         }
       }
     }
+  }
+}
+
 
     stage('3: Code Quality') {
       steps {
