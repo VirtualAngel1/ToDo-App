@@ -28,4 +28,8 @@ HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
 
 RUN apk add --no-cache ca-certificates
 
+ENV DD_AGENT_HOST=trace.agent.datadoghq.com
+ENV DD_TRACE_AGENT_PORT=443
+ENV DD_TRACE_AGENT_URL=https://trace.agent.datadoghq.com
+
 CMD ["node", "server/index.js"]

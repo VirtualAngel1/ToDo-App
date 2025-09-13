@@ -4,6 +4,9 @@ process.env.DD_ENV = 'production';
 process.env.DD_VERSION = '1.0.0';
 process.env.DD_TRACE_DEBUG = 'true'; 
 
+process.env.DD_AGENT_HOST        = 'trace.agent.datadoghq.com'
+process.env.DD_TRACE_AGENT_PORT  = '443'
+
 import tracer from 'dd-trace';
 tracer.init();
 
