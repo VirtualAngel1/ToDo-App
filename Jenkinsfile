@@ -9,11 +9,6 @@ pipeline {
     RENDER_BACKEND_ID       = 'srv-d31s2kjipnbc73cko4cg'
     SERVICE_URL_FRONTEND    = 'https://todo-app-4g2e.onrender.com'
     SERVICE_URL_BACKEND     = 'https://to-do-app-raw1.onrender.com'
-    NEWRELIC_LICENSE_KEY              = credentials('newrelic-license-key')
-    NEWRELIC_FRONTEND_APPID           = ''
-    NEWRELIC_BACKEND_APPID            = ''
-    REACT_APP_NEWRELIC_LICENSE_KEY    = credentials('newrelic-license-key')
-    REACT_APP_NEWRELIC_FRONTEND_APPID = ''
   }
 
   stages {
@@ -85,37 +80,28 @@ pipeline {
       }
     }
 
-    stage('5: Deploy to Render') {
+    stage('5: Deploy to Staging (Docker Compose)') {
       steps {
-        echo '→ Triggering Front-end deploy...'
-        sh """
-          curl -X POST https://api.render.com/deploy/${RENDER_FRONTEND_ID}/webhook \
-            -H 'Authorization: Bearer ${RENDER_API_KEY}' \
-            -H 'Accept: application/json'
-        """
-
-        echo '→ Triggering Back-end deploy...'
-        sh """
-          curl -X POST https://api.render.com/deploy/${RENDER_BACKEND_ID}/webhook \
-            -H 'Authorization: Bearer ${RENDER_API_KEY}' \
-            -H 'Accept: application/json'
-        """
+        echo '→ Deploying to local staging environment with Docker Compose...'
+        sh 'docker compose -f docker-compose.staging.yml down || true'
+        sh 'docker compose -f docker-compose.staging.yml up -d --build'
+        sh 'sleep 5 && curl -f http://localhost:3000/health'
       }
     }
 
-    stage('6: Release to Production') {
+    stage('6: Release to Production (Render)') {
       when { branch 'main' }
       steps {
         input message: "Approve production release of build #${env.BUILD_NUMBER}?", ok: 'Deploy'
 
-        echo '→ Front-end production deploy...'
+        echo '→ Front-end production deploy to Render...'
         sh """
           curl -X POST https://api.render.com/deploy/${RENDER_FRONTEND_ID}/webhook \
             -H 'Authorization: Bearer ${RENDER_API_KEY}' \
             -H 'Accept: application/json'
         """
 
-        echo '→ Back-end production deploy...'
+        echo '→ Back-end production deploy to Render...'
         sh """
           curl -X POST https://api.render.com/deploy/${RENDER_BACKEND_ID}/webhook \
             -H 'Authorization: Bearer ${RENDER_API_KEY}' \
@@ -127,7 +113,6 @@ pipeline {
           script { currentBuild.displayName = "prod-${env.BUILD_NUMBER}" }
         }
       }
-    }
 
   stage('Monitoring') {
     steps {
