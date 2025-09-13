@@ -15,7 +15,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build --verbose",
+    "build": "react-scripts build --verbose --stats=verbose",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
