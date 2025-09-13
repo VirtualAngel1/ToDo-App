@@ -26,4 +26,5 @@ envVars:
     value: "true"
   - key: NODE_VERSION
     value: "20"
-
+  - key: DD_AGENTLESS
+    value: "true"
