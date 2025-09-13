@@ -2,6 +2,7 @@ process.env.DD_API_KEY = '7ced6304e53cb93d211411a9ab30f07c';
 process.env.DD_SERVICE = 'to-do app';
 process.env.DD_ENV = 'production';
 process.env.DD_VERSION = '1.0.0';
+process.env.DD_TRACE_DEBUG = 'true'; 
 
 import tracer from 'dd-trace';
 tracer.init();
@@ -141,6 +142,13 @@ app.delete('/api/tasks/:id', authenticate, async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+});
+
+app.get('/debug-trace', (req, res) => {
+  const span = tracer.startSpan('manual.debug.trace');
+  span.setTag('custom', 'forced');
+  span.finish();
+  res.send('Trace sent');
 });
 
 app.use((err, req, res, next) => {
