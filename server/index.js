@@ -11,7 +11,10 @@ process.env.DD_TRACE_DEBUG = 'true';
 process.env.DD_AGENTLESS = 'true';
 
 import tracer from 'dd-trace';
-tracer.init();
+tracer.init({
+  url: process.env.DD_TRACE_AGENT_URL, 
+  flushInterval: 1000
+});
 
 console.log('dd-trace initialized (agentless AP2)')
 console.log('Datadog config:', {
