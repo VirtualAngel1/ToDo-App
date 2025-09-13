@@ -1,30 +1,17 @@
-import React, { useState } from 'react';
-import LoginForm from './LoginForm';
-import TaskList from './TaskList';
-import './style.css'; 
+import { render, screen } from '@testing-library/react';
+import App from './App';
 
-function App() {
-  const [authToken, setAuthToken] = useState(sessionStorage.getItem('authToken') || null);
+beforeEach(() => {
+  sessionStorage.clear();
+});
 
-  const handleLogin = (token) => {
-    sessionStorage.setItem('authToken', token);
-    setAuthToken(token);
-  };
+test('renders login form when not authenticated', () => {
+  render(<App />);
+  expect(screen.getByText(/login/i)).toBeInTheDocument();
+});
 
-  const handleLogout = () => {
-    sessionStorage.removeItem('authToken');
-    setAuthToken(null);
-  };
-
-  return (
-    <main className="todo-app" role="application" aria-label="To-Do List Application">
-      {authToken ? (
-        <TaskList authToken={authToken} onLogout={handleLogout} />
-      ) : (
-        <LoginForm onLogin={handleLogin} />
-      )}
-    </main>
-  );
-}
-
-export default App;
+test('renders task list when authenticated', () => {
+  sessionStorage.setItem('authToken', 'fake-token');
+  render(<App />);
+  expect(screen.getByText(/task/i)).toBeInTheDocument();
+});

@@ -1,8 +1,17 @@
 import { render, screen } from '@testing-library/react';
 import App from './App';
 
-test('renders learn react link', () => {
+beforeEach(() => {
+  sessionStorage.clear();
+});
+
+test('renders login form when not authenticated', () => {
   render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+  expect(screen.getByText(/login/i)).toBeInTheDocument();
+});
+
+test('renders task list when authenticated', () => {
+  sessionStorage.setItem('authToken', 'fake-token');
+  render(<App />);
+  expect(screen.getByText(/task/i)).toBeInTheDocument();
 });
