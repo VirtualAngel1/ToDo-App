@@ -1,9 +1,10 @@
-process.env.DD_AGENTLESS = 'true';
+process.env.DD_API_KEY = process.env.DD_API_KEY || '<fallback-api-key>'; 
 process.env.DD_SITE = 'ap2.datadoghq.com';
+process.env.DD_AGENTLESS = 'true';
 process.env.DD_SERVICE = 'to-do app';
 process.env.DD_ENV = 'production';
 process.env.DD_VERSION = '1.0.0';
-process.env.DD_TRACE_DEBUG = 'true'
+process.env.DD_TRACE_DEBUG = 'true';
 
 process.env.DD_AGENTLESS = 'true';
 

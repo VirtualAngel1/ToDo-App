@@ -11,7 +11,7 @@ services:
     runtime: node_20
 envVars:
   - key: DD_API_KEY
-    fromSecret: datadog-api-key
+    fromSecret: 7ced6304e53cb93d211411a9ab30f07c
   - key: DD_SITE
     value: ap2.datadoghq.com
   - key: DD_AGENTLESS
