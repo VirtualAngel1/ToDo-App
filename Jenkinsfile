@@ -89,7 +89,7 @@ pipeline {
       }
     }
 
-    stage('6: Release to Production (Render)') {
+    stage('6: Release to Production') {
       when { branch 'main' }
       steps {
         input message: "Approve production release of build #${env.BUILD_NUMBER}?", ok: 'Deploy'
@@ -113,28 +113,29 @@ pipeline {
           script { currentBuild.displayName = "prod-${env.BUILD_NUMBER}" }
         }
       }
-
-  stage('Monitoring') {
-    steps {
-      withCredentials([string(credentialsId: 'better-uptime-api-token', variable: 'BU_TOKEN')]) {
-        sh '''
-          set -e
-          URL="https://to-do-app-raw1.onrender.com"
-          RESPONSE=$(curl -s \
-            -H "Authorization: Token token=$BU_TOKEN" \
-            "https://api.betteruptime.com/v2/incidents?filter[status]=open&filter[monitor_url]=$URL")
-          COUNT=$(echo "$RESPONSE" | jq '.data | length')
-          if [ "$COUNT" -gt 0 ]; then
-            echo "Better Uptime reports $COUNT open incident(s)"
-            exit 1
-          fi
-        '''
-      }
     }
-    post {
-      failure {
-        slackSend channel: '#prod-alerts', color: 'danger',
-          message: "Monitoring failed: Open incidents in Better Uptime."
+
+    stage('7: Monitoring') {
+      steps {
+        withCredentials([string(credentialsId: 'better-uptime-token', variable: 'BU_TOKEN')]) {
+          sh '''
+            set -e
+            URL="https://to-do-app-raw1.onrender.com"
+            RESPONSE=$(curl -s \
+              -H "Authorization: Token token=$BU_TOKEN" \
+              "https://api.betteruptime.com/v2/incidents?filter[status]=open&filter[monitor_url]=$URL")
+            COUNT=$(echo "$RESPONSE" | jq '.data | length')
+            if [ "$COUNT" -gt 0 ]; then
+              echo "Better Uptime reports $COUNT open incident(s)"
+              exit 1
+            fi
+          '''
+        }
+      }
+      post {
+        failure {
+          slackSend channel: '#prod-alerts', color: 'danger',
+            message: "Monitoring failed: Open incidents in Better Uptime."
         }
       }
     }
