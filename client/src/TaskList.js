@@ -20,7 +20,7 @@ function TaskList({ authToken, onLogout }) {
 
   useEffect(() => {
     loadTasks()
-  }, [loadTasks]) 
+  }, [loadTasks])
 
   const addTask = async e => {
     e.preventDefault()
