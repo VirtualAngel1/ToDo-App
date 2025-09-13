@@ -14,10 +14,18 @@ WORKDIR /app
 
 COPY --from=builder /app/server ./server
 COPY --from=builder /app/server/node_modules ./server/node_modules
+
 COPY --from=builder /app/client/build ./server/public
 
+RUN cd server && npm install dd-trace
+
 ENV NODE_ENV=production
+ENV DD_SERVICE=todo-backend
+ENV DD_ENV=production
+ENV DD_VERSION=1.0.0
+
 EXPOSE 3000
-HEALTHCHECK --interval=30s --timeout=10s --retries=3 CMD wget --quiet --spider http://localhost:3000/health || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+  CMD wget --quiet --spider http://localhost:3000/health || exit 1
 
 CMD ["node", "server/index.js"]
