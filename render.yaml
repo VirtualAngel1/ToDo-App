@@ -1,5 +1,5 @@
 secrets:
-  - name: newrelic-license-key
+  - name: datadog-api-key
 
 services:
   - type: web
@@ -7,16 +7,18 @@ services:
     env: node
     branch: main
     buildCommand: cd server && npm ci
-    startCommand: cd server && node --experimental-loader=newrelic/esm-loader.mjs index.js
+    startCommand: cd server && node index.js
     runtime: node_20
     envVars:
-      - key: NEW_RELIC_LICENSE_KEY
-        fromSecret: newrelic-license-key
-      - key: NEW_RELIC_APP_NAME
-        value: To-Do App V1
-      - key: NEW_RELIC_LOG
-        value: stdout
-      - key: NEW_RELIC_LOG_LEVEL
-        value: info
+      - key: DD_API_KEY
+        fromSecret: datadog-api-key
+      - key: DD_SERVICE
+        value: todo-backend
+      - key: DD_ENV
+        value: production
+      - key: DD_VERSION
+        value: "1.0.0"
+      - key: DD_TRACE_ENABLED
+        value: "true"
       - key: NODE_VERSION
         value: "20"

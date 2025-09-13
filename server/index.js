@@ -1,4 +1,6 @@
-import 'newrelic';
+import tracer from 'dd-trace';
+tracer.init();
+
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
