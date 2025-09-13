@@ -6,12 +6,6 @@ process.env.DD_VERSION = '1.0.0';
 import tracer from 'dd-trace';
 tracer.init();
 
-console.log('✅ dd-trace initialized with hardcoded API key');
-
-
-import tracer from 'dd-trace';
-tracer.init();
-
 console.log('Datadog config:', {
   apiKey: process.env.DD_API_KEY,
   service: process.env.DD_SERVICE,
