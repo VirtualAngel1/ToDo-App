@@ -11,17 +11,25 @@ pipeline {
     SERVICE_URL_BACKEND     = 'https://to-do-app-raw1.onrender.com'
   }
 
-  stages {
-    stage('1: Build') {
-      steps {
-        echo '→ Building Front-end...'
-        bat 'npm ci && npm run build'
-
-        echo '→ Building Back-end JAR...'
-        bat 'mvn -f backend/pom.xml clean package -DskipTests'
-        archiveArtifacts artifacts: 'backend/target/*.jar', fingerprint: true
-      }
+stage('1: Build') {
+  steps {
+    echo '→ Building Front-end...'
+    dir('client') {
+      bat 'npm ci'
+      bat 'npm run build'
     }
+
+    echo '→ Building Node.js Back-end...'
+    dir('server') {
+      bat 'npm ci'
+      bat 'npm run build' 
+    }
+
+    echo '→ Building Java Back-end JAR...'
+    bat 'mvn -f backend/pom.xml clean package -DskipTests'
+    archiveArtifacts artifacts: 'backend/target/*.jar', fingerprint: true
+  }
+}
 
     stage('2: Test') {
       steps {
