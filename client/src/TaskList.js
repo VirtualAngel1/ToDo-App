@@ -1,15 +1,11 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
 
 function TaskList({ authToken, onLogout }) {
   const [tasks, setTasks] = useState([])
   const [text, setText] = useState('')
 
-  useEffect(() => {
-    loadTasks()
-  }, [authToken])
-
-  const loadTasks = async () => {
+  const loadTasks = useCallback(async () => {
     try {
       const res = await axios.get(
         `${process.env.REACT_APP_API_URL}/api/tasks`,
@@ -20,7 +16,11 @@ function TaskList({ authToken, onLogout }) {
       console.error('Load tasks error:', err.response || err)
       alert('Failed to load tasks')
     }
-  }
+  }, [authToken])
+
+  useEffect(() => {
+    loadTasks()
+  }, [loadTasks]) 
 
   const addTask = async e => {
     e.preventDefault()
