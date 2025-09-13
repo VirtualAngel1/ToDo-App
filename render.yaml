@@ -14,6 +14,8 @@ envVars:
     fromSecret: datadog-api-key
   - key: DD_SITE
     value: ap2.datadoghq.com
+  - key: DD_AGENTLESS
+    value: "true"
   - key: DD_SERVICE
     value: to-do app
   - key: DD_ENV
@@ -26,5 +28,4 @@ envVars:
     value: "true"
   - key: NODE_VERSION
     value: "20"
-  - key: DD_AGENTLESS
-    value: "true"
+    
