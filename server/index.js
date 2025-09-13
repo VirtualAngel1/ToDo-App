@@ -1,6 +1,13 @@
 import tracer from 'dd-trace';
 tracer.init();
 
+console.log('Datadog config:', {
+  apiKey: process.env.DD_API_KEY,
+  service: process.env.DD_SERVICE,
+  env: process.env.DD_ENV,
+  version: process.env.DD_VERSION
+});
+
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
