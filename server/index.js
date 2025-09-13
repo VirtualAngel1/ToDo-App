@@ -81,13 +81,19 @@ function authenticate(req, res, next) {
   }
 }
 
-app.get('/api/tasks', authenticate, async (req, res, next) => {
-  try {
-    const tasks = await Task.find({ owner: req.user.username });
-    res.json(tasks);
-  } catch (err) {
-    next(err);
-  }
+app.get('/debug-trace', (req, res) => {
+  const span = tracer.startSpan('manual.debug.trace', {
+    childOf: tracer.scope().active(), 
+    tags: {
+      'service.name': process.env.DD_SERVICE,
+      'env': process.env.DD_ENV
+    }
+  });
+
+  setTimeout(() => {
+    span.finish();
+    res.send('Trace sent');
+  }, 50);
 });
 
 app.post(
