@@ -14,8 +14,6 @@ envVars:
     fromSecret: datadog-api-key
   - key: DD_SITE
     value: ap2.datadoghq.com
-  - key: DD_TRACE_AGENT_URL
-    value: https://trace.agent.ap2.datadoghq.com
   - key: DD_SERVICE
     value: to-do app
   - key: DD_ENV
@@ -28,3 +26,4 @@ envVars:
     value: "true"
   - key: NODE_VERSION
     value: "20"
+
