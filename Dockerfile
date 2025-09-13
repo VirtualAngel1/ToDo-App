@@ -17,8 +17,6 @@ COPY --from=builder /app/server/node_modules ./server/node_modules
 
 COPY --from=builder /app/client/build ./server/public
 
-RUN cd server && npm install dd-trace
-
 ENV NODE_ENV=production
 ENV DD_SERVICE=todo-backend
 ENV DD_ENV=production
