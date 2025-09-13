@@ -11,25 +11,26 @@ pipeline {
     SERVICE_URL_BACKEND     = 'https://to-do-app-raw1.onrender.com'
   }
 
-stage('1: Build') {
-  steps {
-    echo '→ Building Front-end...'
-    dir('client') {
-      bat 'npm ci'
-      bat 'npm run build'
-    }
+  stages {
+    stage('1: Build') {
+      steps {
+        echo '→ Building Front-end...'
+        dir('client') {
+          bat 'npm ci'
+          bat 'npm run build'
+        }
 
-    echo '→ Building Node.js Back-end...'
-    dir('server') {
-      bat 'npm ci'
-      bat 'npm run build' 
-    }
+        echo '→ Building Node.js Back-end...'
+        dir('server') {
+          bat 'npm ci'
+          bat 'npm run build'
+        }
 
-    echo '→ Building Java Back-end JAR...'
-    bat 'mvn -f backend/pom.xml clean package -DskipTests'
-    archiveArtifacts artifacts: 'backend/target/*.jar', fingerprint: true
-  }
-}
+        echo '→ Building Java Back-end JAR...'
+        bat 'mvn -f backend/pom.xml clean package -DskipTests'
+        archiveArtifacts artifacts: 'backend/target/*.jar', fingerprint: true
+      }
+    }
 
     stage('2: Test') {
       steps {
@@ -88,7 +89,7 @@ stage('1: Build') {
       }
     }
 
-    stage('5: Deploy to Staging (Docker Compose)') {
+    stage('5: Deploy to Staging') {
       steps {
         echo '→ Deploying to local staging environment with Docker Compose...'
         bat 'docker compose -f docker-compose.staging.yml down || exit 0'
@@ -97,31 +98,29 @@ stage('1: Build') {
       }
     }
 
-    stage('6: Release to Production') {
-      when { branch 'main' }
-      steps {
-        input message: "Approve production release of build #${env.BUILD_NUMBER}?", ok: 'Deploy'
+stage('6: Release to Production') {
+  when { branch 'main' }
+  steps {
+    echo '→ Front-end production deploy to Render...'
+    bat """
+      curl -X POST https://api.render.com/deploy/${RENDER_FRONTEND_ID}/webhook ^
+        -H "Authorization: Bearer ${RENDER_API_KEY}" ^
+        -H "Accept: application/json"
+    """
 
-        echo '→ Front-end production deploy to Render...'
-        bat """
-          curl -X POST https://api.render.com/deploy/${RENDER_FRONTEND_ID}/webhook ^
-            -H "Authorization: Bearer ${RENDER_API_KEY}" ^
-            -H "Accept: application/json"
-        """
-
-        echo '→ Back-end production deploy to Render...'
-        bat """
-          curl -X POST https://api.render.com/deploy/${RENDER_BACKEND_ID}/webhook ^
-            -H "Authorization: Bearer ${RENDER_API_KEY}" ^
-            -H "Accept: application/json"
-        """
-      }
-      post {
-        success {
-          script { currentBuild.displayName = "prod-${env.BUILD_NUMBER}" }
-        }
-      }
+    echo '→ Back-end production deploy to Render...'
+    bat """
+      curl -X POST https://api.render.com/deploy/${RENDER_BACKEND_ID}/webhook ^
+        -H "Authorization: Bearer ${RENDER_API_KEY}" ^
+        -H "Accept: application/json"
+    """
+  }
+  post {
+    success {
+      script { currentBuild.displayName = "prod-${env.BUILD_NUMBER}" }
     }
+  }
+}
 
     stage('7: Monitoring') {
       steps {
