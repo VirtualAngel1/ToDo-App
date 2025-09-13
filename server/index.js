@@ -1,3 +1,14 @@
+process.env.DD_API_KEY = '7ced6304e53cb93d211411a9ab30f07c';
+process.env.DD_SERVICE = 'to-do app';
+process.env.DD_ENV = 'production';
+process.env.DD_VERSION = '1.0.0';
+
+import tracer from 'dd-trace';
+tracer.init();
+
+console.log('✅ dd-trace initialized with hardcoded API key');
+
+
 import tracer from 'dd-trace';
 tracer.init();
 
