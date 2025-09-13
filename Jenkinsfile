@@ -15,10 +15,10 @@ pipeline {
     stage('1: Build') {
       steps {
         echo '→ Building Front-end...'
-        sh 'npm ci && npm run build'
+        bat 'npm ci && npm run build'
 
         echo '→ Building Back-end JAR...'
-        sh 'mvn -f backend/pom.xml clean package -DskipTests'
+        bat 'mvn -f backend/pom.xml clean package -DskipTests'
         archiveArtifacts artifacts: 'backend/target/*.jar', fingerprint: true
       }
     }
@@ -26,10 +26,10 @@ pipeline {
     stage('2: Test') {
       steps {
         echo '→ Testing Front-end...'
-        sh 'npm test'
+        bat 'npm test'
 
         echo '→ Testing Back-end...'
-        sh 'mvn -f backend/pom.xml test'
+        bat 'mvn -f backend/pom.xml test'
       }
       post {
         always {
@@ -43,13 +43,13 @@ pipeline {
       steps {
         echo '→ Running SonarCloud analysis...'
         withSonarQubeEnv("${SONARQUBE_SERVER_ID}") {
-          sh '''
-            sonar-scanner \
-              -Dsonar.projectKey=my-org_my-fullstack-app \
-              -Dsonar.organization=my-org \
-              -Dsonar.sources=.,backend/src \
-              -Dsonar.host.url=${SONAR_HOST_URL} \
-              -Dsonar.login=${SONAR_AUTH_TOKEN}
+          bat '''
+            sonar-scanner ^
+              -Dsonar.projectKey=my-org_my-fullstack-app ^
+              -Dsonar.organization=my-org ^
+              -Dsonar.sources=.,backend/src ^
+              -Dsonar.host.url=%SONAR_HOST_URL% ^
+              -Dsonar.login=%SONAR_AUTH_TOKEN%
           '''
         }
       }
@@ -58,17 +58,17 @@ pipeline {
     stage('4: Security') {
       steps {
         echo '→ Scanning Front-end with Snyk...'
-        sh 'npm install -g snyk'
-        sh '''
-          snyk auth ${SNYK_TOKEN}
+        bat 'npm install -g snyk'
+        bat """
+          snyk auth %SNYK_TOKEN%
           snyk test --json --severity-threshold=high > snyk-frontend.json
-        '''
+        """
 
         echo '→ Scanning Back-end with Snyk...'
-        sh '''
-          snyk auth ${SNYK_TOKEN}
+        bat """
+          snyk auth %SNYK_TOKEN%
           snyk test --file=backend/pom.xml --json --severity-threshold=high > snyk-backend.json
-        '''
+        """
       }
       post {
         always {
@@ -83,9 +83,9 @@ pipeline {
     stage('5: Deploy to Staging (Docker Compose)') {
       steps {
         echo '→ Deploying to local staging environment with Docker Compose...'
-        sh 'docker compose -f docker-compose.staging.yml down || true'
-        sh 'docker compose -f docker-compose.staging.yml up -d --build'
-        sh 'sleep 5 && curl -f http://localhost:3000/health'
+        bat 'docker compose -f docker-compose.staging.yml down || exit 0'
+        bat 'docker compose -f docker-compose.staging.yml up -d --build'
+        bat 'ping -n 6 127.0.0.1 > nul && curl -f http://localhost:3000/health'
       }
     }
 
@@ -95,17 +95,17 @@ pipeline {
         input message: "Approve production release of build #${env.BUILD_NUMBER}?", ok: 'Deploy'
 
         echo '→ Front-end production deploy to Render...'
-        sh """
-          curl -X POST https://api.render.com/deploy/${RENDER_FRONTEND_ID}/webhook \
-            -H 'Authorization: Bearer ${RENDER_API_KEY}' \
-            -H 'Accept: application/json'
+        bat """
+          curl -X POST https://api.render.com/deploy/${RENDER_FRONTEND_ID}/webhook ^
+            -H "Authorization: Bearer ${RENDER_API_KEY}" ^
+            -H "Accept: application/json"
         """
 
         echo '→ Back-end production deploy to Render...'
-        sh """
-          curl -X POST https://api.render.com/deploy/${RENDER_BACKEND_ID}/webhook \
-            -H 'Authorization: Bearer ${RENDER_API_KEY}' \
-            -H 'Accept: application/json'
+        bat """
+          curl -X POST https://api.render.com/deploy/${RENDER_BACKEND_ID}/webhook ^
+            -H "Authorization: Bearer ${RENDER_API_KEY}" ^
+            -H "Accept: application/json"
         """
       }
       post {
@@ -118,18 +118,16 @@ pipeline {
     stage('7: Monitoring') {
       steps {
         withCredentials([string(credentialsId: 'better-uptime-token', variable: 'BU_TOKEN')]) {
-          sh '''
-            set -e
-            URL="https://to-do-app-raw1.onrender.com"
-            RESPONSE=$(curl -s \
-              -H "Authorization: Token token=$BU_TOKEN" \
-              "https://api.betteruptime.com/v2/incidents?filter[status]=open&filter[monitor_url]=$URL")
-            COUNT=$(echo "$RESPONSE" | jq '.data | length')
-            if [ "$COUNT" -gt 0 ]; then
-              echo "Better Uptime reports $COUNT open incident(s)"
-              exit 1
-            fi
-          '''
+          bat """
+            set URL=https://to-do-app-raw1.onrender.com
+            for /f "delims=" %%i in ('curl -s -H "Authorization: Token token=%BU_TOKEN%" "https://api.betteruptime.com/v2/incidents?filter[status]=open&filter[monitor_url]=%URL%"') do set RESPONSE=%%i
+            echo %RESPONSE% | jq ".data | length" > count.txt
+            set /p COUNT=<count.txt
+            if %COUNT% GTR 0 (
+              echo Better Uptime reports %COUNT% open incident(s)
+              exit /b 1
+            )
+          """
         }
       }
       post {
