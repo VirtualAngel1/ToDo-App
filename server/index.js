@@ -4,12 +4,13 @@ process.env.DD_ENV = 'production';
 process.env.DD_VERSION = '1.0.0';
 process.env.DD_TRACE_DEBUG = 'true'; 
 
-process.env.DD_AGENT_HOST        = 'trace.agent.datadoghq.com'
-process.env.DD_TRACE_AGENT_PORT  = '443'
+process.env.DD_SITE = 'ap2.datadoghq.com'
+process.env.DD_TRACE_AGENT_URL = 'https://trace.agent.ap2.datadoghq.com'
 
 import tracer from 'dd-trace';
 tracer.init();
 
+console.log('dd-trace initialized (agentless AP2)')
 console.log('Datadog config:', {
   apiKey: process.env.DD_API_KEY,
   service: process.env.DD_SERVICE,
