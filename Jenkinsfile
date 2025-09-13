@@ -12,24 +12,39 @@ pipeline {
   }
 
   stages {
-    stage('1: Build') {
-      steps {
-        echo '→ Building Front-end...'
-        dir('client') {
-          bat 'npm ci'
-          bat 'npm run build'
-        }
+stage('1: Build') {
+  steps {
+    script {
+      // --- Frontend ---
+      echo '→ Building Front-end...'
+      dir('client') {
+        bat 'npm ci'
+        bat 'npm run build'
+      }
 
+      if (fileExists('server/package.json')) {
         echo '→ Building Node.js Back-end...'
         dir('server') {
           bat 'npm ci'
         }
+      } else {
+        echo '↷ Skipping Node.js Back-end (server/package.json not found)'
+      }
 
+      if (fileExists('backend/pom.xml')) {
         echo '→ Building Java Back-end JAR...'
-        bat 'mvn -f backend/pom.xml clean package -DskipTests'
-        archiveArtifacts artifacts: 'backend/target/*.jar', fingerprint: true
+        bat 'mvn -f backend\\pom.xml clean package -DskipTests'
+        archiveArtifacts artifacts: 'backend/target/*.jar',
+                         fingerprint: true,
+                         allowEmptyArchive: true,
+                         onlyIfSuccessful: true
+      } else {
+        echo '↷ Skipping Java Back-end (backend/pom.xml not found)'
       }
     }
+  }
+}
+
 
     stage('2: Test') {
       steps {
