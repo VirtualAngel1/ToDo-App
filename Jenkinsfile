@@ -23,7 +23,6 @@ pipeline {
         echo '→ Building Node.js Back-end...'
         dir('server') {
           bat 'npm ci'
-          bat 'npm run build'
         }
 
         echo '→ Building Java Back-end JAR...'
