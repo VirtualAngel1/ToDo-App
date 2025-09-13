@@ -1,3 +1,5 @@
+console.log('DD_API_KEY present?', !!process.env.DD_API_KEY);
+
 process.env.DD_API_KEY = process.env.DD_API_KEY || '<fallback-api-key>'; 
 process.env.DD_SITE = 'ap2.datadoghq.com';
 process.env.DD_AGENTLESS = 'true';
