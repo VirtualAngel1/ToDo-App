@@ -12,78 +12,78 @@ pipeline {
   }
 
   stages {
-stage('1: Build') {
-  steps {
-    script {
-      echo '→ Building Front-end...'
-      dir('client') {
-        bat 'npm ci'
-        bat 'npm run build'
-      }
 
-      if (fileExists('server/package.json')) {
-        echo '→ Building Node.js Back-end...'
-        dir('server') {
-          bat 'npm ci'
-        }
-      } else {
-        echo '↷ Skipping Node.js Back-end (server/package.json not found)'
-      }
+    stage('1: Build') {
+      steps {
+        script {
+          echo '→ Building Front-end...'
+          dir('client') {
+            bat 'npm ci'
+            bat 'npm run build'
+          }
 
-      if (fileExists('backend/pom.xml')) {
-        echo '→ Building Java Back-end JAR...'
-        bat 'mvn -f backend\\pom.xml clean package -DskipTests'
-        archiveArtifacts artifacts: 'backend/target/*.jar',
-                         fingerprint: true,
-                         allowEmptyArchive: true,
-                         onlyIfSuccessful: true
-      } else {
-        echo '↷ Skipping Java Back-end (backend/pom.xml not found)'
-      }
-    }
-  }
-}
+          if (fileExists('server/package.json')) {
+            echo '→ Building Node.js Back-end...'
+            dir('server') {
+              bat 'npm ci'
+            }
+          } else {
+            echo '↷ Skipping Node.js Back-end (server/package.json not found)'
+          }
 
-stage('2: Test') {
-  steps {
-    script {
-      if (fileExists('client/package.json')) {
-        echo '→ Testing Front-end...'
-        dir('client') {
-          bat 'npm ci'
-          bat 'npm test'
-        }
-      } else {
-        echo '↷ Skipping Front-end tests (client/package.json not found)'
-      }
-
-      if (fileExists('backend/pom.xml')) {
-        echo '→ Testing Back-end...'
-        bat 'mvn -f backend\\pom.xml test'
-      } else {
-        echo '↷ Skipping Back-end tests (backend/pom.xml not found)'
-      }
-    }
-  }
-  post {
-    always {
-      script {
-        if (fileExists('client/test-results')) {
-          junit 'client/test-results/*.xml'
-        } else {
-          echo '↷ No JUnit XML found for frontend tests'
-        }
-
-        if (fileExists('backend/target/surefire-reports')) {
-          junit 'backend/target/surefire-reports/*.xml'
-        } else {
-          echo '↷ No JUnit XML found for backend tests'
+          if (fileExists('server/pom.xml')) {
+            echo '→ Building Java Back-end JAR...'
+            bat 'mvn -f server\\pom.xml clean package -DskipTests'
+            archiveArtifacts artifacts: 'server/target/*.jar',
+                             fingerprint: true,
+                             allowEmptyArchive: true,
+                             onlyIfSuccessful: true
+          } else {
+            echo '↷ Skipping Java Back-end (server/pom.xml not found)'
+          }
         }
       }
     }
-  }
-}
 
+    stage('2: Test') {
+      steps {
+        script {
+          if (fileExists('client/package.json')) {
+            echo '→ Testing Front-end...'
+            dir('client') {
+              bat 'npm ci'
+              bat 'npm test'
+            }
+          } else {
+            echo '↷ Skipping Front-end tests (client/package.json not found)'
+          }
+
+          if (fileExists('server/pom.xml')) {
+            echo '→ Testing Back-end...'
+            bat 'mvn -f server\\pom.xml test'
+          } else {
+            echo '↷ Skipping Back-end tests (server/pom.xml not found)'
+          }
+        }
+      }
+      post {
+        always {
+          script {
+            if (fileExists('client/test-results')) {
+              junit 'client/test-results/*.xml'
+            } else {
+              echo '↷ No JUnit XML found for frontend tests'
+            }
+
+            if (fileExists('server/target/surefire-reports')) {
+              junit 'server/target/surefire-reports/*.xml'
+            } else {
+              echo '↷ No JUnit XML found for backend tests'
+            }
+          }
+        }
+      }
+    }
 
     stage('3: Code Quality') {
       steps {
@@ -93,7 +93,7 @@ stage('2: Test') {
             sonar-scanner ^
               -Dsonar.projectKey=my-org_my-fullstack-app ^
               -Dsonar.organization=my-org ^
-              -Dsonar.sources=.,backend/src ^
+              -Dsonar.sources=.,server/src ^
               -Dsonar.host.url=%SONAR_HOST_URL% ^
               -Dsonar.login=%SONAR_AUTH_TOKEN%
           '''
@@ -113,7 +113,7 @@ stage('2: Test') {
         echo '→ Scanning Back-end with Snyk...'
         bat """
           snyk auth %SNYK_TOKEN%
-          snyk test --file=backend/pom.xml --json --severity-threshold=high > snyk-backend.json
+          snyk test --file=server/pom.xml --json --severity-threshold=high > snyk-backend.json
         """
       }
       post {
@@ -135,29 +135,29 @@ stage('2: Test') {
       }
     }
 
-stage('6: Release to Production') {
-  when { branch 'main' }
-  steps {
-    echo '→ Front-end production deploy to Render...'
-    bat """
-      curl -X POST https://api.render.com/deploy/${RENDER_FRONTEND_ID}/webhook ^
-        -H "Authorization: Bearer ${RENDER_API_KEY}" ^
-        -H "Accept: application/json"
-    """
+    stage('6: Release to Production') {
+      when { branch 'main' }
+      steps {
+        echo '→ Front-end production deploy to Render...'
+        bat """
+          curl -X POST https://api.render.com/deploy/${RENDER_FRONTEND_ID}/webhook ^
+            -H "Authorization: Bearer ${RENDER_API_KEY}" ^
+            -H "Accept: application/json"
+        """
 
-    echo '→ Back-end production deploy to Render...'
-    bat """
-      curl -X POST https://api.render.com/deploy/${RENDER_BACKEND_ID}/webhook ^
-        -H "Authorization: Bearer ${RENDER_API_KEY}" ^
-        -H "Accept: application/json"
-    """
-  }
-  post {
-    success {
-      script { currentBuild.displayName = "prod-${env.BUILD_NUMBER}" }
+        echo '→ Back-end production deploy to Render...'
+        bat """
+          curl -X POST https://api.render.com/deploy/${RENDER_BACKEND_ID}/webhook ^
+            -H "Authorization: Bearer ${RENDER_API_KEY}" ^
+            -H "Accept: application/json"
+        """
+      }
+      post {
+        success {
+          script { currentBuild.displayName = "prod-${env.BUILD_NUMBER}" }
+        }
+      }
     }
-  }
-}
 
     stage('7: Monitoring') {
       steps {

@@ -1,17 +1,18 @@
-import { render, screen } from '@testing-library/react';
-import App from './App';
+import React from 'react';
+import LoginForm from './TaskList'; 
+import TaskList from './LoginForm'; 
+function App() {
+  const isAuthenticated = !!sessionStorage.getItem('authToken');
 
-beforeEach(() => {
-  sessionStorage.clear();
-});
+  return (
+    <div>
+      {isAuthenticated ? (
+        <TaskList />
+      ) : (
+        <LoginForm />
+      )}
+    </div>
+  );
+}
 
-test('renders login form when not authenticated', () => {
-  render(<App />);
-  expect(screen.getByText(/login/i)).toBeInTheDocument();
-});
-
-test('renders task list when authenticated', () => {
-  sessionStorage.setItem('authToken', 'fake-token');
-  render(<App />);
-  expect(screen.getByText(/task/i)).toBeInTheDocument();
-});
+export default App;
