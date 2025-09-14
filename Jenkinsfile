@@ -20,30 +20,32 @@ pipeline {
     stage('1: Build') {
       steps {
         script {
-          echo '→ Building Front-end...'
-          dir('client') {
-            bat 'npm ci'
-            bat 'npm run build'
-          }
-
-          if (fileExists('server/package.json')) {
-            echo '→ Installing Node.js Back-end dependencies...'
-            dir('server') {
+          catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+            echo '→ Building Front-end...'
+            dir('client') {
               bat 'npm ci'
+              bat 'npm run build'
             }
-          } else {
-            echo '↷ Skipping Node.js Back-end (server/package.json not found)'
-          }
 
-          if (fileExists('server/pom.xml')) {
-            echo '→ Building Java Back-end JAR (with tests)...'
-            bat 'mvn -f server\\pom.xml clean package'
-            archiveArtifacts artifacts: 'server/target/*.jar',
-                             fingerprint: true,
-                             allowEmptyArchive: true,
-                             onlyIfSuccessful: true
-          } else {
-            echo '↷ Skipping Java Back-end (server/pom.xml not found)'
+            if (fileExists('server/package.json')) {
+              echo '→ Installing Node.js Back-end dependencies...'
+              dir('server') {
+                bat 'npm ci'
+              }
+            } else {
+              echo '↷ Skipping Node.js Back-end (server/package.json not found)'
+            }
+
+            if (fileExists('server/pom.xml')) {
+              echo '→ Building Java Back-end JAR (with tests)...'
+              bat 'mvn -f server\\pom.xml clean package'
+              archiveArtifacts artifacts: 'server/target/*.jar',
+                               fingerprint: true,
+                               allowEmptyArchive: true,
+                               onlyIfSuccessful: true
+            } else {
+              echo '↷ Skipping Java Back-end (server/pom.xml not found)'
+            }
           }
         }
       }
@@ -60,67 +62,77 @@ pipeline {
       }
     }
 
-stage('2: Test') {
-  steps {
-    script {
-      if (fileExists('client/package.json')) {
-        echo '→ Testing Front-end...'
-        bat 'cd client && npm ci && set JEST_JUNIT_OUTPUT=./junit.xml && npm test -- --ci --no-cache --reporters=default --reporters=jest-junit'
-      } else {
-        echo '↷ Skipping Front-end tests (client/package.json not found)'
-      }
+    stage('2: Test') {
+      steps {
+        script {
+          catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+            if (fileExists('client/package.json')) {
+              echo '→ Testing Front-end...'
+              bat 'cd client && npm ci && set JEST_JUNIT_OUTPUT=./junit.xml && npm test -- --ci --no-cache --reporters=default --reporters=jest-junit'
+            } else {
+              echo '↷ Skipping Front-end tests (client/package.json not found)'
+            }
 
-      if (fileExists('server/pom.xml')) {
-        echo '→ Re-running Back-end tests...'
-        bat 'mvn -f server\\pom.xml test'
+            if (fileExists('server/pom.xml')) {
+              echo '→ Re-running Back-end tests...'
+              bat 'mvn -f server\\pom.xml test'
+            }
+          }
+        }
       }
-    }
-  }
-  post {
-    always {
-      script {
-        if (fileExists('client/junit.xml')) {
-          junit 'client/junit.xml'
-        } else if (fileExists('client/test-results')) {
-          junit 'client/test-results/*.xml'
-        } else {
-          echo '↷ No JUnit XML found for frontend tests'
+      post {
+        always {
+          script {
+            if (fileExists('client/junit.xml')) {
+              junit 'client/junit.xml'
+            } else if (fileExists('client/test-results')) {
+              junit 'client/test-results/*.xml'
+            } else {
+              echo '↷ No JUnit XML found for frontend tests'
+            }
+          }
         }
       }
     }
-  }
-}
 
     stage('3: Code Quality') {
       steps {
-        echo '→ Running SonarCloud analysis...'
-        withSonarQubeEnv("${SONARQUBE_SERVER_ID}") {
-          bat '''
-            sonar-scanner ^
-              -Dsonar.projectKey=my-org_my-fullstack-app ^
-              -Dsonar.organization=my-org ^
-              -Dsonar.sources=.,server/src ^
-              -Dsonar.host.url=%SONAR_HOST_URL% ^
-              -Dsonar.login=%SONAR_AUTH_TOKEN%
-          '''
+        script {
+          catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+            echo '→ Running SonarCloud analysis...'
+            withSonarQubeEnv("${SONARQUBE_SERVER_ID}") {
+              bat '''
+                sonar-scanner ^
+                  -Dsonar.projectKey=my-org_my-fullstack-app ^
+                  -Dsonar.organization=my-org ^
+                  -Dsonar.sources=.,server/src ^
+                  -Dsonar.host.url=%SONAR_HOST_URL% ^
+                  -Dsonar.login=%SONAR_AUTH_TOKEN%
+              '''
+            }
+          }
         }
       }
     }
 
     stage('4: Security') {
       steps {
-        echo '→ Scanning Front-end with Snyk...'
-        bat 'npm install -g snyk'
-        bat """
-          snyk auth %SNYK_TOKEN%
-          snyk test --json --severity-threshold=high > snyk-frontend.json
-        """
+        script {
+          catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+            echo '→ Scanning Front-end with Snyk...'
+            bat 'npm install -g snyk'
+            bat """
+              snyk auth %SNYK_TOKEN%
+              snyk test --json --severity-threshold=high > snyk-frontend.json
+            """
 
-        echo '→ Scanning Back-end with Snyk...'
-        bat """
-          snyk auth %SNYK_TOKEN%
-          snyk test --file=server/pom.xml --json --severity-threshold=high > snyk-backend.json
-        """
+            echo '→ Scanning Back-end with Snyk...'
+            bat """
+              snyk auth %SNYK_TOKEN%
+              snyk test --file=server/pom.xml --json --severity-threshold=high > snyk-backend.json
+            """
+          }
+        }
       }
       post {
         always {
@@ -134,29 +146,37 @@ stage('2: Test') {
 
     stage('5: Deploy to Staging') {
       steps {
-        echo '→ Deploying to local staging environment with Docker Compose...'
-        bat 'docker compose -f docker-compose.staging.yml down || exit 0'
-        bat 'docker compose -f docker-compose.staging.yml up -d --build'
-        bat 'ping -n 6 127.0.0.1 > nul && curl -f http://localhost:3000/health'
+        script {
+          catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+            echo '→ Deploying to local staging environment with Docker Compose...'
+            bat 'docker compose -f docker-compose.staging.yml down || exit 0'
+            bat 'docker compose -f docker-compose.staging.yml up -d --build'
+            bat 'ping -n 6 127.0.0.1 > nul && curl -f http://localhost:3000/health'
+          }
+        }
       }
     }
 
     stage('6: Release to Production') {
       when { branch 'main' }
       steps {
-        echo '→ Front-end production deploy to Render...'
-        bat """
-          curl -X POST https://api.render.com/deploy/${RENDER_FRONTEND_ID}/webhook ^
-            -H "Authorization: Bearer ${RENDER_API_KEY}" ^
-            -H "Accept: application/json"
-        """
+        script {
+          catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+            echo '→ Front-end production deploy to Render...'
+            bat """
+              curl -X POST https://api.render.com/deploy/${RENDER_FRONTEND_ID}/webhook ^
+                -H "Authorization: Bearer ${RENDER_API_KEY}" ^
+                -H "Accept: application/json"
+            """
 
-        echo '→ Back-end production deploy to Render...'
-        bat """
-          curl -X POST https://api.render.com/deploy/${RENDER_BACKEND_ID}/webhook ^
-            -H "Authorization: Bearer ${RENDER_API_KEY}" ^
-            -H "Accept: application/json"
-        """
+            echo '→ Back-end production deploy to Render...'
+            bat """
+              curl -X POST https://api.render.com/deploy/${RENDER_BACKEND_ID}/webhook ^
+                -H "Authorization: Bearer ${RENDER_API_KEY}" ^
+                -H "Accept: application/json"
+            """
+          }
+        }
       }
       post {
         success {
@@ -167,17 +187,21 @@ stage('2: Test') {
 
     stage('7: Monitoring') {
       steps {
-        withCredentials([string(credentialsId: 'better-uptime-token', variable: 'BU_TOKEN')]) {
-          bat """
-            set URL=https://to-do-app-raw1.onrender.com
-            for /f "delims=" %%i in ('curl -s -H "Authorization: Token token=%BU_TOKEN%" "https://api.betteruptime.com/v2/incidents?filter[status]=open&filter[monitor_url]=%URL%"') do set RESPONSE=%%i
-            echo %RESPONSE% | jq ".data | length" > count.txt
-            set /p COUNT=<count.txt
-            if %COUNT% GTR 0 (
-              echo Better Uptime reports %COUNT% open incident(s)
-              exit /b 1
-            )
-          """
+        script {
+          catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+            withCredentials([string(credentialsId: 'better-uptime-token', variable: 'BU_TOKEN')]) {
+              bat """
+                set URL=https://to-do-app-raw1.onrender.com
+                for /f "delims=" %%i in ('curl -s -H "Authorization: Token token=%BU_TOKEN%" "https://api.betteruptime.com/v2/incidents?filter[status]=open&filter[monitor_url]=%URL%"') do set RESPONSE=%%i
+                echo %RESPONSE% | jq ".data | length" > count.txt
+                set /p COUNT=<count.txt
+                if %COUNT% GTR 0 (
+                  echo Better Uptime reports %COUNT% open incident(s)
+                  exit /b 1
+                )
+              """
+            }
+          }
         }
       }
       post {
