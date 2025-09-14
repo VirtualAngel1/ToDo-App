@@ -2,7 +2,7 @@ pipeline {
   agent any
 
   tools {
-    maven 'Maven_3.9.6' 
+    maven 'Maven_3.9.6'
   }
 
   environment {
@@ -27,7 +27,7 @@ pipeline {
           }
 
           if (fileExists('server/package.json')) {
-            echo '→ Building Node.js Back-end...'
+            echo '→ Installing Node.js Back-end deps...'
             dir('server') {
               bat 'npm ci'
             }
@@ -36,14 +36,25 @@ pipeline {
           }
 
           if (fileExists('server/pom.xml')) {
-            echo '→ Building Java Back-end JAR...'
-            bat 'mvn -f server\\pom.xml clean package -DskipTests'
+            echo '→ Building Java Back-end JAR (with tests)...'
+            bat 'mvn -f server\\pom.xml clean package'
             archiveArtifacts artifacts: 'server/target/*.jar',
                              fingerprint: true,
                              allowEmptyArchive: true,
                              onlyIfSuccessful: true
           } else {
             echo '↷ Skipping Java Back-end (server/pom.xml not found)'
+          }
+        }
+      }
+      post {
+        always {
+          script {e
+            if (fileExists('server/target/surefire-reports')) {
+              junit 'server/target/surefire-reports/*.xml'
+            } else {
+              echo '↷ No JUnit XML found for backend tests'
+            }
           }
         }
       }
@@ -56,33 +67,27 @@ pipeline {
             echo '→ Testing Front-end...'
             dir('client') {
               bat 'npm ci'
-              bat 'npm test'
+              bat 'set JEST_JUNIT_OUTPUT=./junit.xml && npm test -- --ci --reporters=default --reporters=jest-junit'
             }
           } else {
             echo '↷ Skipping Front-end tests (client/package.json not found)'
           }
 
           if (fileExists('server/pom.xml')) {
-            echo '→ Testing Back-end...'
-            bat 'mvn -f server\\pom.xml test'
-          } else {
-            echo '↷ Skipping Back-end tests (server/pom.xml not found)'
+           echo '→ Re-running Back-end tests...'
+          bat 'mvn -f server\\pom.xml test'
           }
         }
       }
       post {
         always {
           script {
-            if (fileExists('client/test-results')) {
+            if (fileExists('client/junit.xml')) {
+              junit 'client/junit.xml'
+            } else if (fileExists('client/test-results')) {
               junit 'client/test-results/*.xml'
             } else {
               echo '↷ No JUnit XML found for frontend tests'
-            }
-
-            if (fileExists('server/target/surefire-reports')) {
-              junit 'server/target/surefire-reports/*.xml'
-            } else {
-              echo '↷ No JUnit XML found for backend tests'
             }
           }
         }
