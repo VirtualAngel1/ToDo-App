@@ -13,6 +13,8 @@ pipeline {
     RENDER_BACKEND_ID    = 'srv-d31s2kjipnbc73cko4cg'
     SERVICE_URL_FRONTEND = 'https://todo-app-4g2e.onrender.com'
     SERVICE_URL_BACKEND  = 'https://to-do-app-raw1.onrender.com'
+    NODE_CACHE           = "${WORKSPACE}@tmp/node_cache"
+    MAVEN_CACHE          = "${WORKSPACE}@tmp/maven_cache"
   }
 
   stages {
@@ -23,7 +25,15 @@ pipeline {
           catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
             echo '→ Building Front-end...'
             dir('client') {
-              bat 'npm ci'
+              if (fileExists("${NODE_CACHE}/package-lock.json") &&
+                  sh(returnStdout: true, script: "cmp -s package-lock.json ${NODE_CACHE}/package-lock.json && echo SAME || echo DIFF").trim() == "SAME") {
+                echo '↷ Restoring cached node_modules...'
+                bat "xcopy /E /I /Y \"${NODE_CACHE}\\node_modules\" node_modules"
+              } else {
+                bat 'npm ci'
+                bat "xcopy /E /I /Y node_modules \"${NODE_CACHE}\\node_modules\""
+                bat "copy package-lock.json \"${NODE_CACHE}\\package-lock.json\""
+              }
               bat 'npm run build'
             }
 
@@ -38,7 +48,9 @@ pipeline {
 
             if (fileExists('server/pom.xml')) {
               echo '→ Building Java Back-end JAR (with tests)...'
+              bat "if exist \"${MAVEN_CACHE}\" xcopy /E /I /Y \"${MAVEN_CACHE}\" %USERPROFILE%\\.m2\\repository"
               bat 'mvn -f server\\pom.xml clean package'
+              bat "xcopy /E /I /Y %USERPROFILE%\\.m2\\repository \"${MAVEN_CACHE}\""
               archiveArtifacts artifacts: 'server/target/*.jar',
                                fingerprint: true,
                                allowEmptyArchive: true,
@@ -68,7 +80,7 @@ pipeline {
           catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
             if (fileExists('client/package.json')) {
               echo '→ Testing Front-end...'
-              bat 'cd client && npm ci && set JEST_JUNIT_OUTPUT=./junit.xml && npm test -- --ci --no-cache --reporters=default --reporters=jest-junit'
+              bat 'cd client && set JEST_JUNIT_OUTPUT=./junit.xml && npm test -- --ci --no-cache --reporters=default --reporters=jest-junit'
             } else {
               echo '↷ Skipping Front-end tests (client/package.json not found)'
             }
