@@ -1,6 +1,10 @@
 pipeline {
   agent any
 
+  tools {
+    maven 'Maven_3.9.6' 
+  }
+
   environment {
     SONARQUBE_SERVER_ID     = 'SonarCloud'
     SNYK_TOKEN              = credentials('snyk-token')
