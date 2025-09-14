@@ -10,7 +10,7 @@ class AppTest {
     void getStartupMessage_shouldContainExpectedText() {
         String message = App.getStartupMessage();
 
-        assertTrue(message.contains("ToDo Server started successfully."),
-                   "Startup message should contain the expected text.");
+        assertTrue(message.contains("ToDo Server started successfully at "),
+                   "Startup message should contain the expected text and format");
     }
 }
