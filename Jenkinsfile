@@ -6,13 +6,13 @@ pipeline {
   }
 
   environment {
-    SONARQUBE_SERVER_ID     = 'SonarCloud'
-    SNYK_TOKEN              = credentials('snyk-token')
-    RENDER_API_KEY          = credentials('render-key')
-    RENDER_FRONTEND_ID      = 'srv-d31s9v2dbo4c739tapn0'
-    RENDER_BACKEND_ID       = 'srv-d31s2kjipnbc73cko4cg'
-    SERVICE_URL_FRONTEND    = 'https://todo-app-4g2e.onrender.com'
-    SERVICE_URL_BACKEND     = 'https://to-do-app-raw1.onrender.com'
+    SONARQUBE_SERVER_ID  = 'SonarCloud'
+    SNYK_TOKEN           = credentials('snyk-token')
+    RENDER_API_KEY       = credentials('render-key')
+    RENDER_FRONTEND_ID   = 'srv-d31s9v2dbo4c739tapn0'
+    RENDER_BACKEND_ID    = 'srv-d31s2kjipnbc73cko4cg'
+    SERVICE_URL_FRONTEND = 'https://todo-app-4g2e.onrender.com'
+    SERVICE_URL_BACKEND  = 'https://to-do-app-raw1.onrender.com'
   }
 
   stages {
@@ -27,7 +27,7 @@ pipeline {
           }
 
           if (fileExists('server/package.json')) {
-            echo '→ Installing Node.js Back-end deps...'
+            echo '→ Installing Node.js Back-end dependencies...'
             dir('server') {
               bat 'npm ci'
             }
@@ -49,7 +49,7 @@ pipeline {
       }
       post {
         always {
-          script {e
+          script {
             if (fileExists('server/target/surefire-reports')) {
               junit 'server/target/surefire-reports/*.xml'
             } else {
@@ -74,8 +74,8 @@ pipeline {
           }
 
           if (fileExists('server/pom.xml')) {
-           echo '→ Re-running Back-end tests...'
-          bat 'mvn -f server\\pom.xml test'
+            echo '→ Re-running Back-end tests...'
+            bat 'mvn -f server\\pom.xml test'
           }
         }
       }
