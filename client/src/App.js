@@ -1,6 +1,6 @@
 import React from 'react';
-import LoginForm from './TaskList'; 
-import TaskList from './LoginForm'; 
+import LoginForm from './LoginForm';
+import TaskList from './TaskList';
 function App() {
   const isAuthenticated = !!sessionStorage.getItem('authToken');
 
