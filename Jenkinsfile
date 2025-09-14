@@ -65,8 +65,7 @@ stage('2: Test') {
     script {
       if (fileExists('client/package.json')) {
         echo '→ Testing Front-end...'
-        bat 'cd client && npm ci'
-        bat 'set JEST_JUNIT_OUTPUT=./client/junit.xml && npm test -- --ci client/src/App.test.js --reporters=default --reporters=jest-junit'
+        bat 'cd client && npm ci && set JEST_JUNIT_OUTPUT=./junit.xml && npm test -- --ci src/App.test.js --reporters=default --reporters=jest-junit'
       } else {
         echo '↷ Skipping Front-end tests (client/package.json not found)'
       }
