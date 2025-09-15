@@ -210,44 +210,45 @@ stage('4: Security') {
       }
     }
 
-stage('7: Monitoring') {
-  steps {
-    script {
-      catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-
-        bat '''
-          if not exist jq.exe (
-            echo Downloading jq.exe...
-            curl -L https://github.com/stedolan/jq/releases/latest/download/jq-win64.exe -o jq.exe
-          )
-        '''
-
-        withCredentials([string(credentialsId: 'better-uptime-token', variable: 'BU_TOKEN')]) {
-          bat """
-            set URL=https://to-do-app-raw1.onrender.com
-            for /f "delims=" %%i in ('curl -s -H "Authorization: Token token=%BU_TOKEN%" "https://api.betteruptime.com/v2/incidents?filter[status]=open&filter[monitor_url]=%URL%"') do set RESPONSE=%%i
-            echo %RESPONSE% > response.json
-            for /f %%c in ('type response.json ^| jq.exe ".data | length"') do set COUNT=%%c
-            if %COUNT% GTR 0 (
-              echo Better Uptime reports %COUNT% open incident(s)
-              exit /b 1
-            )
-          """
+    stage('7: Monitoring') {
+      steps {
+        script {
+          catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+            bat '''
+              if not exist jq.exe (
+                echo Downloading jq.exe...
+                curl -L https://github.com/stedolan/jq/releases/latest/download/jq-win64.exe -o jq.exe
+              )
+            '''
+            withCredentials([string(credentialsId: 'better-uptime-token', variable: 'BU_TOKEN')]) {
+              bat """
+                set URL=https://to-do-app-raw1.onrender.com
+                for /f "delims=" %%i in ('curl -s -H "Authorization: Token token=%BU_TOKEN%" "https://api.betteruptime.com/v2/incidents?filter[status]=open&filter[monitor_url]=%URL%"') do set RESPONSE=%%i
+                echo %RESPONSE% > response.json
+                for /f %%c in ('type response.json ^| jq.exe ".data | length"') do set COUNT=%%c
+                if %COUNT% GTR 0 (
+                  echo Better Uptime reports %COUNT% open incident(s)
+                  exit /b 1
+                )
+              """
+            }
+          }
         }
       }
-    }
-  }
-  post {
-    failure {
-      slackSend channel: '#prod-alerts', color: 'danger',
-        message: "Monitoring failed: Open incidents in Better Uptime."
-    }
-  }
-}
+      post {
+        failure {
+          slackSend channel: '#prod-alerts', color: 'danger',
+            message: "Monitoring failed: Open incidents in Better Uptime."
+        }
+      }
+    } 
+
+  } 
 
   post {
     success  { echo '✅ Pipeline completed successfully.' }
     unstable { echo '⚠️ Pipeline completed with warnings or test failures.' }
     failure  { echo '❌ Pipeline failed, please check console output and artifacts.' }
   }
-}
+
+} 
