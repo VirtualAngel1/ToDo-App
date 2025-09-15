@@ -74,87 +74,100 @@ pipeline {
       }
     }
 
-    stage('2: Test') {
-      steps {
-        script {
-          catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-            if (fileExists('client/package.json')) {
-              echo '→ Testing Front-end...'
-              bat 'cd client && set JEST_JUNIT_OUTPUT=./junit.xml && npm test -- --ci --no-cache --reporters=default --reporters=jest-junit'
-            } else {
-              echo '↷ Skipping Front-end tests (client/package.json not found)'
-            }
-
-            if (fileExists('server/pom.xml')) {
-              echo '→ Re-running Back-end tests...'
-              bat 'mvn -f server\\pom.xml test'
-            }
-          }
+stage('2: Test') {
+  steps {
+    script {
+      catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+        if (fileExists('client/package.json')) {
+          echo '→ Testing Front-end...'
+          bat 'cd client && npm ci && npm run test:ci'
+        } else {
+          echo '↷ Skipping Front-end tests (client/package.json not found)'
         }
-      }
-      post {
-        always {
-          script {
-            if (fileExists('client/junit.xml')) {
-              junit 'client/junit.xml'
-            } else if (fileExists('client/test-results')) {
-              junit 'client/test-results/*.xml'
-            } else {
-              echo '↷ No JUnit XML found for frontend tests'
-            }
-          }
+
+        if (fileExists('server/pom.xml')) {
+          echo '→ Testing Back-end...'
+          bat 'mvn -f server\\pom.xml test'
+        } else {
+          echo '↷ Skipping Back-end tests (server/pom.xml not found)'
         }
       }
     }
+  }
+  post {
+    always {
+      script {
+        if (fileExists('client/junit.xml')) {
+          junit 'client/junit.xml'
+        } else {
+          echo '↷ No JUnit XML found for frontend tests'
+        }
 
-    stage('3: Code Quality') {
-      steps {
-        script {
-          catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-            echo '→ Running SonarCloud analysis...'
-            withSonarQubeEnv("${SONARQUBE_SERVER_ID}") {
-              bat '''
-                sonar-scanner ^
-                  -Dsonar.projectKey=my-org_my-fullstack-app ^
-                  -Dsonar.organization=my-org ^
-                  -Dsonar.sources=.,server/src ^
-                  -Dsonar.host.url=%SONAR_HOST_URL% ^
-                  -Dsonar.login=%SONAR_AUTH_TOKEN%
-              '''
-            }
-          }
+        if (fileExists('server/target/surefire-reports')) {
+          junit 'server/target/surefire-reports/*.xml'
+        } else {
+          echo '↷ No JUnit XML found for backend tests'
         }
       }
     }
+  }
+}
 
-    stage('4: Security') {
-      steps {
-        script {
-          catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-            echo '→ Scanning Front-end with Snyk...'
-            bat 'npm install -g snyk'
-            bat """
-              snyk auth %SNYK_TOKEN%
-              snyk test --json --severity-threshold=high > snyk-frontend.json
-            """
 
-            echo '→ Scanning Back-end with Snyk...'
-            bat """
-              snyk auth %SNYK_TOKEN%
-              snyk test --file=server/pom.xml --json --severity-threshold=high > snyk-backend.json
-            """
-          }
-        }
-      }
-      post {
-        always {
-          archiveArtifacts artifacts: 'snyk-frontend.json,snyk-backend.json'
-        }
-        failure {
-          echo 'One or more Snyk scans failed, please view the JSON reports.'
+stage('3: Code Quality') {
+  steps {
+    script {
+      catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+        echo '→ Running SonarCloud analysis...'
+        withSonarQubeEnv("${SONARQUBE_SERVER_ID}") {
+          bat '''
+            if not exist scanner (
+              curl -L https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-windows.zip -o sonar-scanner.zip
+              powershell -Command "Expand-Archive sonar-scanner.zip -DestinationPath scanner"
+            )
+          '''
+          bat '''
+            scanner\\sonar-scanner-5.0.1.3006-windows\\bin\\sonar-scanner ^
+              -Dsonar.host.url=%SONAR_HOST_URL% ^
+              -Dsonar.login=%SONAR_AUTH_TOKEN%
+          '''
         }
       }
     }
+  }
+}
+
+
+stage('4: Security') {
+  steps {
+    script {
+      catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+        echo '→ Downloading Snyk CLI...'
+        bat '''
+          if not exist snyk.exe (
+            curl -L https://downloads.snyk.io/cli/stable/snyk-win.exe -o snyk.exe
+          )
+        '''
+
+        echo '→ Scanning Front-end with Snyk...'
+        bat '.\\snyk.exe auth %SNYK_TOKEN%'
+        bat '.\\snyk.exe test client --severity-threshold=high --json > snyk-frontend.json'
+
+        echo '→ Scanning Back-end with Snyk...'
+        bat '.\\snyk.exe test server --severity-threshold=high --json > snyk-backend.json'
+      }
+    }
+  }
+  post {
+    always {
+      archiveArtifacts artifacts: 'snyk-frontend.json,snyk-backend.json'
+    }
+    failure {
+      echo 'One or more Snyk scans failed, please view the JSON reports.'
+    }
+  }
+}
+
 
     stage('5: Deploy to Staging') {
       steps {
@@ -197,33 +210,40 @@ pipeline {
       }
     }
 
-    stage('7: Monitoring') {
-      steps {
-        script {
-          catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-            withCredentials([string(credentialsId: 'better-uptime-token', variable: 'BU_TOKEN')]) {
-              bat """
-                set URL=https://to-do-app-raw1.onrender.com
-                for /f "delims=" %%i in ('curl -s -H "Authorization: Token token=%BU_TOKEN%" "https://api.betteruptime.com/v2/incidents?filter[status]=open&filter[monitor_url]=%URL%"') do set RESPONSE=%%i
-                echo %RESPONSE% | jq ".data | length" > count.txt
-                set /p COUNT=<count.txt
-                if %COUNT% GTR 0 (
-                  echo Better Uptime reports %COUNT% open incident(s)
-                  exit /b 1
-                )
-              """
-            }
-          }
-        }
-      }
-      post {
-        failure {
-          slackSend channel: '#prod-alerts', color: 'danger',
-            message: "Monitoring failed: Open incidents in Better Uptime."
+stage('7: Monitoring') {
+  steps {
+    script {
+      catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+
+        bat '''
+          if not exist jq.exe (
+            echo Downloading jq.exe...
+            curl -L https://github.com/stedolan/jq/releases/latest/download/jq-win64.exe -o jq.exe
+          )
+        '''
+
+        withCredentials([string(credentialsId: 'better-uptime-token', variable: 'BU_TOKEN')]) {
+          bat """
+            set URL=https://to-do-app-raw1.onrender.com
+            for /f "delims=" %%i in ('curl -s -H "Authorization: Token token=%BU_TOKEN%" "https://api.betteruptime.com/v2/incidents?filter[status]=open&filter[monitor_url]=%URL%"') do set RESPONSE=%%i
+            echo %RESPONSE% > response.json
+            for /f %%c in ('type response.json ^| jq.exe ".data | length"') do set COUNT=%%c
+            if %COUNT% GTR 0 (
+              echo Better Uptime reports %COUNT% open incident(s)
+              exit /b 1
+            )
+          """
         }
       }
     }
   }
+  post {
+    failure {
+      slackSend channel: '#prod-alerts', color: 'danger',
+        message: "Monitoring failed: Open incidents in Better Uptime."
+    }
+  }
+}
 
   post {
     success  { echo '✅ Pipeline completed successfully.' }
