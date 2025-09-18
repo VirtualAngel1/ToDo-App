@@ -71,7 +71,12 @@ pipeline {
             if (fileExists('client/package.json')) {
               echo '→ Testing Front-end...'
               dir('client') {
-                bat 'npm ci'
+                if (!fileExists('node_modules')) {
+                  echo '↷ node_modules missing — Installing dependencies...'
+                  bat 'npm ci'
+                } else {
+                  echo '↷ Using existing node_modules from Stage 1'
+                }
                 bat 'npm run test:ci'
               }
             } else {
@@ -90,12 +95,7 @@ pipeline {
       post {
         always {
           script {
-            if (fileExists('client/junit.xml')) {
-              junit 'client/junit.xml'
-            } else {
-              echo '↷ No JUnit XML found for frontend tests'
-            }
-
+            junit 'client/junit.xml'
             if (fileExists('server/target/surefire-reports')) {
               junit 'server/target/surefire-reports/*.xml'
             } else {

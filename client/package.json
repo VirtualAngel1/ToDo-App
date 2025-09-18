@@ -16,7 +16,7 @@
     "build": "react-scripts build --verbose --stats=verbose",
     "test": "react-scripts test",
     "test:list": "cross-env CI=true TEMP=.tmp TMP=.tmp JEST_CACHE_DIRECTORY=.jest-cache react-scripts test --no-cache --listTests --watchAll=false",
-    "test:ci": "cross-env CI=true TEMP=.tmp TMP=.tmp JEST_CACHE_DIRECTORY=.jest-cache react-scripts test --ci --no-cache --reporters=default --reporters=jest-junit --passWithNoTests --watchAll=false",
+    "test:ci": "cross-env CI=true TEMP=.tmp TMP=.tmp JEST_CACHE_DIRECTORY=.jest-cache react-scripts test --ci --no-cache --passWithNoTests --watchAll=false",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
@@ -50,6 +50,18 @@
   "jest": {
     "transformIgnorePatterns": [
       "/node_modules/(?!(axios)/)"
+    ],
+    "reporters": [
+      "default",
+      [
+        "jest-junit",
+        {
+          "outputDirectory": ".",
+          "outputName": "junit.xml",
+          "ancestorSeparator": " › ",
+          "usePathForSuiteName": "true"
+        }
+      ]
     ]
   }
 }
