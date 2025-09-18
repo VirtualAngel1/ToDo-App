@@ -50,7 +50,7 @@ pipeline {
             }
 
             if (fileExists('server/pom.xml')) {
-              echo '→ Building Java Back-end JAR (with tests)...'
+              echo '→ Building Back-end...'
               bat "if exist \"${MAVEN_CACHE}\" xcopy /E /I /Y \"${MAVEN_CACHE}\" %USERPROFILE%\\.m2\\repository"
               bat 'mvn -f server\\pom.xml clean package'
               bat "xcopy /E /I /Y %USERPROFILE%\\.m2\\repository \"${MAVEN_CACHE}\""
@@ -83,7 +83,16 @@ pipeline {
           catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
             if (fileExists('client/package.json')) {
               echo '→ Testing Front-end...'
-              bat 'cd client && npm ci && npm run test:ci'
+              dir('client') {
+                if (!fileExists('node_modules')) {
+                  echo '↷ node_modules missing — Installing dependencies...'
+                  bat 'npm ci'
+                } else {
+                  echo '↷ Using existing node_modules from Stage 1'
+                }
+                bat 'npm run test:ci'
+              }
+            }
             } else {
               echo '↷ Skipping Front-end tests (client/package.json not found)'
             }
