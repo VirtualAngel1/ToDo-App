@@ -77,25 +77,24 @@ pipeline {
       }
     }
 
-    stage('2: Test') {
-      steps {
-        script {
-          catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-            if (fileExists('client/package.json')) {
-              echo '→ Testing Front-end...'
-              dir('client') {
-                if (!fileExists('node_modules')) {
-                  echo '↷ node_modules missing — Installing dependencies...'
-                  bat 'npm ci'
-                } else {
-                  echo '↷ Using existing node_modules from Stage 1'
-                }
-                bat 'npm run test:ci'
-              }
-            }
+stage('2: Test') {
+  steps {
+    script {
+      catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+        if (fileExists('client/package.json')) {
+          echo '→ Testing Front-end...'
+          dir('client') {
+            if (!fileExists('node_modules')) {
+              echo '↷ node_modules missing — Installing dependencies...'
+              bat 'npm ci'
             } else {
-              echo '↷ Skipping Front-end tests (client/package.json not found)'
+              echo '↷ Using existing node_modules from Stage 1'
             }
+            bat 'npm run test:ci'
+          }
+        } else {
+          echo '↷ Skipping Front-end tests (client/package.json not found)'
+        }
 
             if (fileExists('server/pom.xml')) {
               echo '→ Testing Back-end...'
