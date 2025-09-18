@@ -13,8 +13,6 @@ pipeline {
     RENDER_BACKEND_ID    = 'srv-d31s2kjipnbc73cko4cg'
     SERVICE_URL_FRONTEND = 'https://todo-app-4g2e.onrender.com'
     SERVICE_URL_BACKEND  = 'https://to-do-app-raw1.onrender.com'
-    NODE_CACHE           = "${WORKSPACE}@tmp/node_cache"
-    MAVEN_CACHE          = "${WORKSPACE}@tmp/maven_cache"
   }
 
   stages {
@@ -23,22 +21,12 @@ pipeline {
       steps {
         script {
           catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+
             echo '→ Building Front-end...'
-              dir('client') {
-                if (fileExists("${NODE_CACHE}/package-lock.json") &&
-                    bat(returnStdout: true, script: """
-                      fc /B package-lock.json "${NODE_CACHE}\\package-lock.json" >nul
-                      if errorlevel 1 (echo DIFF) else (echo SAME)
-                    """).trim() == "SAME") {
-                  echo '↷ Restoring cached node_modules...'
-                  bat "xcopy /E /I /Y \"${NODE_CACHE}\\node_modules\" node_modules"
-                } else {
-                  bat 'npm ci'
-                  bat "xcopy /E /I /Y node_modules \"${NODE_CACHE}\\node_modules\""
-                  bat "copy package-lock.json \"${NODE_CACHE}\\package-lock.json\""
-                }
-                bat 'npm run build'
-              }
+            dir('client') {
+              bat 'npm ci'
+              bat 'npm run build'
+            }
 
             if (fileExists('server/package.json')) {
               echo '→ Installing Node.js Back-end dependencies...'
@@ -51,9 +39,7 @@ pipeline {
 
             if (fileExists('server/pom.xml')) {
               echo '→ Building Back-end...'
-              bat "if exist \"${MAVEN_CACHE}\" xcopy /E /I /Y \"${MAVEN_CACHE}\" %USERPROFILE%\\.m2\\repository"
               bat 'mvn -f server\\pom.xml clean package'
-              bat "xcopy /E /I /Y %USERPROFILE%\\.m2\\repository \"${MAVEN_CACHE}\""
               archiveArtifacts artifacts: 'server/target/*.jar',
                                fingerprint: true,
                                allowEmptyArchive: true,
@@ -77,24 +63,20 @@ pipeline {
       }
     }
 
-stage('2: Test') {
-  steps {
-    script {
-      catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-        if (fileExists('client/package.json')) {
-          echo '→ Testing Front-end...'
-          dir('client') {
-            if (!fileExists('node_modules')) {
-              echo '↷ node_modules missing — Installing dependencies...'
-              bat 'npm ci'
+    stage('2: Test') {
+      steps {
+        script {
+          catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+
+            if (fileExists('client/package.json')) {
+              echo '→ Testing Front-end...'
+              dir('client') {
+                bat 'npm ci'
+                bat 'npm run test:ci'
+              }
             } else {
-              echo '↷ Using existing node_modules from Stage 1'
+              echo '↷ Skipping Front-end tests (client/package.json not found)'
             }
-            bat 'npm run test:ci'
-          }
-        } else {
-          echo '↷ Skipping Front-end tests (client/package.json not found)'
-        }
 
             if (fileExists('server/pom.xml')) {
               echo '→ Testing Back-end...'
@@ -214,7 +196,7 @@ stage('2: Test') {
           script { currentBuild.displayName = "prod-${env.BUILD_NUMBER}" }
         }
       }
-    } 
+    }
 
     stage('7: Monitoring') {
       steps {
@@ -247,14 +229,13 @@ stage('2: Test') {
             message: "Monitoring failed: Open incidents in Better Uptime."
         }
       }
-    } 
+    }
 
-  } 
+  }
 
   post {
     success  { echo '✅ Pipeline completed successfully.' }
     unstable { echo '⚠️ Pipeline completed with warnings or test failures.' }
     failure  { echo '❌ Pipeline failed, please check console output and artifacts.' }
   }
-
-} 
+}
