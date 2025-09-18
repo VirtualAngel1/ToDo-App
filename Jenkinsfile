@@ -2,7 +2,9 @@ pipeline {
   agent any
 
   tools {
+    git 'Git'
     maven 'Maven_3.9.6'
+    sonarScanner 'SonarScanner_5.0.1'
   }
 
   environment {
@@ -25,6 +27,7 @@ pipeline {
             echo '→ Building Front-end...'
             dir('client') {
               bat 'npm ci'
+              stash name: 'client_node_modules', includes: 'node_modules/**'
               bat 'npm run build'
             }
 
@@ -32,6 +35,7 @@ pipeline {
               echo '→ Installing Node.js Back-end dependencies...'
               dir('server') {
                 bat 'npm ci'
+                stash name: 'server_node_modules', includes: 'node_modules/**'
               }
             } else {
               echo '↷ Skipping Node.js Back-end (server/package.json not found)'
@@ -71,11 +75,11 @@ pipeline {
             if (fileExists('client/package.json')) {
               echo '→ Testing Front-end...'
               dir('client') {
-                if (!fileExists('node_modules')) {
-                  echo '↷ node_modules missing — Installing dependencies...'
-                  bat 'npm ci'
-                } else {
-                  echo '↷ Using existing node_modules from Stage 1'
+                try {
+                  unstash 'client_node_modules'
+                  echo '↷ Using node_modules from Stage 1'
+                } catch (err) {
+                  echo '↷ No stashed node_modules found, running without cache'
                 }
                 bat 'npm run test:ci'
               }
@@ -85,6 +89,16 @@ pipeline {
 
             if (fileExists('server/pom.xml')) {
               echo '→ Testing Back-end...'
+              if (fileExists('server/package.json')) {
+                dir('server') {
+                  try {
+                    unstash 'server_node_modules'
+                    echo '↷ Using node_modules from Stage 1'
+                  } catch (err) {
+                    echo '↷ No stashed node_modules found, running without cache'
+                  }
+                }
+              }
               bat 'mvn -f server\\pom.xml test'
             } else {
               echo '↷ Skipping Back-end tests (server/pom.xml not found)'
@@ -95,7 +109,11 @@ pipeline {
       post {
         always {
           script {
-            junit 'client/junit.xml'
+            if (fileExists('client/junit.xml')) {
+              junit 'client/junit.xml'
+            } else {
+              echo '↷ No JUnit XML found for frontend tests'
+            }
             if (fileExists('server/target/surefire-reports')) {
               junit 'server/target/surefire-reports/*.xml'
             } else {
@@ -106,29 +124,19 @@ pipeline {
       }
     }
 
-    stage('3: Code Quality') {
-      steps {
-        script {
-          catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-            echo '→ Running SonarCloud analysis...'
-            withSonarQubeEnv("${SONARQUBE_SERVER_ID}") {
-              bat '''
-                if not exist sonar-scanner-5.0.1.3006-windows (
-                  echo Downloading SonarScanner CLI...
-                  curl -L https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-windows.zip -o sonar-scanner.zip
-                  powershell -Command "Expand-Archive sonar-scanner.zip -DestinationPath . -Force"
-                )
-              '''
-              bat '''
-                sonar-scanner-5.0.1.3006-windows\\bin\\sonar-scanner ^
-                  -Dsonar.host.url=%SONAR_HOST_URL% ^
-                  -Dsonar.login=%SONAR_AUTH_TOKEN%
-              '''
-            }
-          }
-        }
-      }
+stage('3: Code Quality') {
+  steps {
+    withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
+      bat """
+        sonar-scanner ^
+          -Dsonar.organization=virtualangel ^
+          -Dsonar.projectKey=VirtualAngel1_ToDo-App ^
+          -Dsonar.host.url=https://sonarcloud.io ^
+          -Dsonar.login=%SONAR_TOKEN%
+      """
     }
+  }
+}
 
     stage('4: Security') {
       steps {
@@ -163,15 +171,59 @@ pipeline {
         script {
           catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
             echo '→ Deploying to local staging environment with Docker Compose...'
-            bat 'docker compose -f docker-compose.yml down || exit 0'
-            bat 'docker compose -f docker-compose.yml up -d --build'
+            echo "Workspace: ${env.WORKSPACE}"
+
+            bat '''
+              echo --- Workspace root listing ---
+              dir /b
+              echo ------------------------------
+            '''
+
+            def composeFile = bat(
+              returnStdout: true,
+              label: 'Resolve compose file',
+              script: '''
+                @echo off
+                setlocal enabledelayedexpansion
+                set FOUND=
+
+                rem Check root
+                for %%F in (docker-compose.yml docker-compose.yaml) do (
+                  if exist "%%F" set FOUND=%%F
+                )
+
+                rem Check common subfolders
+                if not defined FOUND (
+                  for %%P in (docker deploy compose) do (
+                    for %%E in (yml yaml) do (
+                      if exist "%%P\\docker-compose.%%E" set FOUND=%%P\\docker-compose.%%E
+                      if exist "%%P\\compose.%%E" set FOUND=%%P\\compose.%%E
+                    )
+                  )
+                )
+
+                if not defined FOUND (
+                  echo NONE
+                ) else (
+                  echo !FOUND!
+                )
+              '''
+            ).trim()
+
+            if (composeFile == 'NONE' || !fileExists(composeFile)) {
+              error "❌ No docker-compose file found in workspace."
+            }
+
+            echo "✅ Using docker compose file: ${composeFile}"
+
+            bat "docker compose -f \"${composeFile}\" down || exit 0"
+            bat "docker compose -f \"${composeFile}\" up -d --build"
             bat 'ping -n 6 127.0.0.1 > nul && curl -f http://localhost:3000/health'
           }
         }
       }
     }
-
-    stage('6: Release to Production') {
+        stage('6: Release to Production') {
       when { branch 'main' }
       steps {
         script {
@@ -211,12 +263,15 @@ pipeline {
             withCredentials([string(credentialsId: 'better-uptime-token', variable: 'BU_TOKEN')]) {
               bat """
                 set URL=https://to-do-app-raw1.onrender.com
-                for /f "delims=" %%i in ('curl -s -H "Authorization: Token token=%BU_TOKEN%" "https://api.betteruptime.com/v2/incidents?filter[status]=open&filter[monitor_url]=%URL%"') do set RESPONSE=%%i
-                echo %RESPONSE% > response.json
-                for /f %%c in ('type response.json ^| jq.exe ".data | length"') do set COUNT=%%c
+                curl -s -H "Authorization: Token token=%BU_TOKEN%" ^
+                     "https://api.betteruptime.com/api/v2/incidents?filter[status]=open&filter[monitor_url]=%URL%" ^
+                     > response.json
+                for /f %%c in ('jq.exe ".data | length" response.json') do set COUNT=%%c
                 if %COUNT% GTR 0 (
                   echo Better Uptime reports %COUNT% open incident(s)
                   exit /b 1
+                ) else (
+                  echo ✅ No open incidents reported by Better Uptime
                 )
               """
             }
@@ -230,7 +285,6 @@ pipeline {
         }
       }
     }
-
   }
 
   post {
