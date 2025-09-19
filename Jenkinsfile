@@ -25,7 +25,7 @@ pipeline {
 
             echo '→ Building Front-end...'
             dir('client') {
-              bat 'dir src /b'
+              bat 'npm run test:list' 
               bat 'npm ci'
               stash name: 'client_node_modules', includes: 'node_modules/**'
               bat 'npm run build'
