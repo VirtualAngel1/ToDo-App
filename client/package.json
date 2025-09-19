@@ -15,8 +15,8 @@
   "start": "react-scripts start",
   "build": "react-scripts build --verbose --stats=verbose",
   "test": "react-scripts test",
-  "test:list": "cross-env CI=true TEMP=.tmp TMP=.tmp JEST_CACHE_DIRECTORY=.jest-cache react-scripts test --no-cache --listTests --watchAll=false",
-  "test:ci": "cross-env CI=true JEST_JUNIT_OUTPUT=client/junit.xml TEMP=.tmp TMP=.tmp JEST_CACHE_DIRECTORY=.jest-cache react-scripts test --ci --no-cache --reporters=default --reporters=jest-junit --passWithNoTests --watchAll=false --testPathPattern='src'",
+  "test:list": "set CI=true&& set TEMP=.tmp&& set TMP=.tmp&& set JEST_CACHE_DIRECTORY=.jest-cache&& react-scripts test --no-cache --listTests --watchAll=false",
+  "test:ci": "set CI=true&& set JEST_JUNIT_OUTPUT=client/junit.xml&& set TEMP=.tmp&& set TMP=.tmp&& set JEST_CACHE_DIRECTORY=.jest-cache&& react-scripts test --ci --no-cache --reporters=default --reporters=jest-junit --passWithNoTests --watchAll=false --testPathPattern='src'",
   "eject": "react-scripts eject"
 },
   "eslintConfig": {
