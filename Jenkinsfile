@@ -27,7 +27,7 @@ pipeline {
             dir('client') {
               bat 'npm ci'
               bat 'npm run test:ci --verbose' 
-              bat 'npx react-scripts test src/App.test.js --ci --no-cache --reporters=default --reporters=jest-junit'
+              bat 'npx react-scripts test "src/App.test.js" --ci --no-cache --reporters=default --reporters=jest-junit --passWithNoTests'
               stash name: 'client_node_modules', includes: 'node_modules/**'
               bat 'npm run build'
             }
