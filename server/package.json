@@ -37,9 +37,6 @@
     "supertest": "^6.3.3",
     "cross-env": "^7.0.3"
   },
-  "jest": {
-    "testEnvironment": "node"
-  },
   "jest-junit": {
     "output": "./junit.xml"
   }
