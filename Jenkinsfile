@@ -4,7 +4,6 @@ pipeline {
   tools {
     git 'Git'
     maven 'Maven_3.9.6'
-    sonarRunner 'SonarScanner_5.0.1'
   }
 
   environment {
@@ -127,13 +126,16 @@ pipeline {
 stage('3: Code Quality') {
   steps {
     withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
-      bat """
-        sonar-scanner ^
-          -Dsonar.organization=virtualangel ^
-          -Dsonar.projectKey=VirtualAngel1_ToDo-App ^
-          -Dsonar.host.url=https://sonarcloud.io ^
-          -Dsonar.login=%SONAR_TOKEN%
-      """
+      script {
+        def scannerHome = tool name: 'SonarScanner_5.0.1', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+        bat """
+          "${scannerHome}\\bin\\sonar-scanner.bat" ^
+            -Dsonar.organization=virtualangel ^
+            -Dsonar.projectKey=VirtualAngel1_ToDo-App ^
+            -Dsonar.host.url=https://sonarcloud.io ^
+            -Dsonar.login=%SONAR_TOKEN%
+        """
+      }
     }
   }
 }
