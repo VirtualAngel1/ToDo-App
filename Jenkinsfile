@@ -25,7 +25,7 @@ pipeline {
 
             echo '→ Building Front-end...'
             dir('client') {
-              bat 'npx jest src/App.test.js --verbose'
+              bat 'npm run test:ci --verbose' 
               bat 'dir /b /s jest.config.js'
               bat 'npm ci'
               stash name: 'client_node_modules', includes: 'node_modules/**'
