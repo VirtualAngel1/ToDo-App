@@ -75,7 +75,7 @@ stage('2: Test') {
         if (fileExists('client/package.json')) {
           echo '→ Testing Front-end...'
           dir('client') {
-          bat 'rmdir /s /q .jest-cache || echo No cache to delete'
+          bat 'if exist .jest-cache (rmdir /s /q .jest-cache) else (echo No cache to delete)'
           bat 'set CI=true && npm run test:ci'
           }
         } else {
