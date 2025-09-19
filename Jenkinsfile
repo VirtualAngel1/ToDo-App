@@ -66,62 +66,42 @@ pipeline {
       }
     }
 
-    stage('2: Test') {
-      steps {
-        script {
-          catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-
-            if (fileExists('client/package.json')) {
-              echo '→ Testing Front-end...'
-              dir('client') {
-                try {
-                  unstash 'client_node_modules'
-                  echo '↷ Using node_modules from Stage 1'
-                } catch (err) {
-                  echo '↷ No stashed node_modules found, running without cache'
-                }
-                bat 'npm run test:ci'
-              }
-            } else {
-              echo '↷ Skipping Front-end tests (client/package.json not found)'
-            }
-
-            if (fileExists('server/pom.xml')) {
-              echo '→ Testing Back-end...'
-              if (fileExists('server/package.json')) {
-                dir('server') {
-                  try {
-                    unstash 'server_node_modules'
-                    echo '↷ Using node_modules from Stage 1'
-                  } catch (err) {
-                    echo '↷ No stashed node_modules found, running without cache'
-                  }
-                }
-              }
-              bat 'mvn -f server\\pom.xml test'
-            } else {
-              echo '↷ Skipping Back-end tests (server/pom.xml not found)'
-            }
+stage('2: Test') {
+  steps {
+    script {
+      catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+        if (fileExists('client/package.json')) {
+          echo '→ Testing Front-end...'
+          dir('client') {
+          bat 'set CI=true && npm run test:ci'
           }
+        } else {
+          echo '↷ client/ not found, skipping front-end tests'
         }
-      }
-      post {
-        always {
-          script {
-            if (fileExists('client/junit.xml')) {
-              junit 'client/junit.xml'
-            } else {
-              echo '↷ No JUnit XML found for frontend tests'
-            }
-            if (fileExists('server/target/surefire-reports')) {
-              junit 'server/target/surefire-reports/*.xml'
-            } else {
-              echo '↷ No JUnit XML found for backend tests'
-            }
-          }
+
+        echo '→ Testing Back-end...'
+        if (fileExists('server/pom.xml')) {
+          bat 'mvn -f server\\pom.xml test'
+        } else {
+          echo '↷ server/pom.xml not found, skipping back-end tests'
         }
       }
     }
+  }
+  post {
+    always {
+      script {
+        if (fileExists('client/junit.xml')) {
+          junit allowEmptyResults: true, testResults: 'client/junit.xml'
+        } else {
+          echo '↷ No Front-end JUnit report found at client/junit.xml'
+        }
+        junit allowEmptyResults: true, testResults: 'server/target/surefire-reports/*.xml'
+      }
+    }
+  }
+}
+
 
 stage('3: Code Quality') {
   steps {
