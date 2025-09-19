@@ -27,7 +27,7 @@ pipeline {
             dir('client') {
               bat 'npm ci'
               bat 'npm run test:ci --verbose' 
-              bat 'npx react-scripts test "src/App.test.js" --ci --no-cache --reporters=default --reporters=jest-junit --passWithNoTests'
+              bat 'npx react-scripts test --ci --no-cache --reporters=default --reporters=jest-junit'
               stash name: 'client_node_modules', includes: 'node_modules/**'
               bat 'npm run build'
             }
@@ -116,7 +116,7 @@ stage('3: Code Quality') {
             -Dsonar.organization=virtualangel ^
             -Dsonar.projectKey=VirtualAngel1_ToDo-App ^
             -Dsonar.host.url=https://sonarcloud.io ^
-            -Dsonar.login=%SONAR_TOKEN%
+            -Dsonar.token=%SONAR_TOKEN%
         """
       }
     }
@@ -247,17 +247,25 @@ stage('3: Code Quality') {
             '''
             withCredentials([string(credentialsId: 'better-uptime-token', variable: 'BU_TOKEN')]) {
               bat """
-                set URL=https://to-do-app-raw1.onrender.com
+                @echo off
+                setlocal enabledelayedexpansion
+
+                set "URL=https://to-do-app-raw1.onrender.com"
+
                 curl -s -H "Authorization: Token token=%BU_TOKEN%" ^
-                     "https://api.betteruptime.com/api/v2/incidents?filter[status]=open&filter[monitor_url]=%URL%" ^
-                     > response.json
+                    "https://api.betteruptime.com/api/v2/incidents?filter[status]=open^&filter[monitor_url]=!URL!" ^
+                    > response.json
+
                 for /f %%c in ('jq.exe ".data | length" response.json') do set COUNT=%%c
-                if %COUNT% GTR 0 (
-                  echo Better Uptime reports %COUNT% open incident(s)
+
+                if !COUNT! GTR 0 (
+                  echo Better Uptime reports !COUNT! open incident(s)
                   exit /b 1
                 ) else (
                   echo ✅ No open incidents reported by Better Uptime
                 )
+
+                endlocal
               """
             }
           }
