@@ -26,7 +26,6 @@ pipeline {
             echo '→ Building Front-end...'
             dir('client') {
               bat 'npm ci'
-              bat 'dir src'
               bat 'npx jest --showConfig'
               bat 'npx react-scripts test --ci --no-cache --reporters=default --reporters=jest-junit'
               stash name: 'client_node_modules', includes: 'node_modules/**'
