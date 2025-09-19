@@ -46,10 +46,5 @@
   },
   "jest-junit": {
     "output": "./junit.xml"
-  },
-  "jest": {
-    "transformIgnorePatterns": [
-      "/node_modules/(?!(axios)/)"
-    ]
   }
 }
