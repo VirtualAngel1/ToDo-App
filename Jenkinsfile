@@ -25,7 +25,8 @@ pipeline {
 
             echo '→ Building Front-end...'
             dir('client') {
-              bat 'npm run test:list' 
+              bat 'npx jest src/App.test.js --verbose'
+              bat 'dir /b /s jest.config.js'
               bat 'npm ci'
               stash name: 'client_node_modules', includes: 'node_modules/**'
               bat 'npm run build'
@@ -74,6 +75,7 @@ stage('2: Test') {
         if (fileExists('client/package.json')) {
           echo '→ Testing Front-end...'
           dir('client') {
+          bat 'rmdir /s /q .jest-cache || echo No cache to delete'
           bat 'set CI=true && npm run test:ci'
           }
         } else {
