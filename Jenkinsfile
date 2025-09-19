@@ -4,7 +4,7 @@ pipeline {
   tools {
     git 'Git'
     maven 'Maven_3.9.6'
-    sonarScanner 'SonarScanner_5.0.1'
+    hudson.plugins.sonar.SonarRunnerInstallation 'SonarScanner_5.0.1'
   }
 
   environment {
