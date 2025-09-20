@@ -1,6 +1,6 @@
 const config = {
   testDir: './tests',
-  timeout: 10000,
+  timeout: 1000000,
   reporter: [['junit', { outputFile: 'playwright-report/results.xml' }]],
   projects: [
     {

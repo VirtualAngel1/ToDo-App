@@ -15,6 +15,7 @@ COPY server ./server
 
 WORKDIR /app
 COPY client/package*.json ./client/
+COPY client ./client 
 WORKDIR /app/client
 RUN npm ci && npm run build
 
