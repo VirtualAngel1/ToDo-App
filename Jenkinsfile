@@ -26,8 +26,6 @@ pipeline {
             echo '→ Building Front-end...'
             dir('client') {
               bat 'npm ci'
-              bat 'npx jest --showConfig'
-              bat 'npx react-scripts test --ci --no-cache --reporters=default --reporters=jest-junit'
               stash name: 'client_node_modules', includes: 'node_modules/**'
               bat 'npm run build'
             }
@@ -75,6 +73,14 @@ stage('2: Test') {
         if (fileExists('client/package.json')) {
           echo '→ Testing Front-end...'
           dir('client') {
+                bat 'npm ci'
+                bat 'npx playwright install --with-deps'
+                bat 'npm run test:e2e'
+              }
+            }
+            post {
+              always {
+                junit 'client/playwright-report/*.xml'
           bat 'if exist .jest-cache (rmdir /s /q .jest-cache) else (echo No cache to delete)'
           bat 'set CI=true && npm run test:ci'
           }

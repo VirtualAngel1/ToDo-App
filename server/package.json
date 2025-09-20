@@ -12,7 +12,8 @@
     "dev": "nodemon index.js",
     "test": "jest --runInBand",
     "test:ci": "cross-env CI=true jest --runInBand --reporters=default --reporters=jest-junit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test:e2e": "playwright test --reporter=junit --output=playwright-report"
   },
   "keywords": [],
   "author": "Chris",
