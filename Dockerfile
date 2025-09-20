@@ -1,4 +1,3 @@
-
 FROM eclipse-temurin:17-jdk AS backend-builder
 
 WORKDIR /app/server
