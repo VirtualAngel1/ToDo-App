@@ -1,15 +1,14 @@
+services:
+  - type: web
+    name: to-do-backend
+    env: docker
+    dockerfilePath: server/Dockerfile
+    autoDeploy: true
+    healthCheckPath: "/health"
+
 secrets:
   - name: datadog-api-key
 
-services:
-  - type: web
-    name: to-do app
-    env: node
-    branch: main
-    buildCommand: cd server && npm ci
-    startCommand: cd server && node index.js
-    healthCheckPath: "/health"
-    runtime: node_20
 envVars:
   - key: DD_API_KEY
     fromSecret: 7ced6304e53cb93d211411a9ab30f07c
@@ -18,7 +17,7 @@ envVars:
   - key: DD_TRACE_AGENT_URL
     value: https://trace.agent.ap2.datadoghq.com/api/v0.2/traces
   - key: DD_SERVICE
-    value: to-do app
+    value: to-do-backend
   - key: DD_ENV
     value: production
   - key: DD_VERSION
@@ -27,6 +26,3 @@ envVars:
     value: "true"
   - key: DD_TRACE_DEBUG
     value: "true"
-  - key: NODE_VERSION
-    value: "20"
-    
