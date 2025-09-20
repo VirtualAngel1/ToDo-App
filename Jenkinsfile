@@ -75,7 +75,7 @@ stage('2: Test') {
           dir('client') {
             bat 'npm ci'
             bat 'npx playwright install --with-deps'
-            bat 'npx playwright test --project=chromium --reporter=junit --output=playwright-report'
+            bat 'npx playwright test --project=chromium --reporter=junit --output=playwright-report --debug'
             bat 'if exist .jest-cache (rmdir /s /q .jest-cache) else (echo No cache to delete)'
             bat 'set CI=true && npm run test:ci'
           }
