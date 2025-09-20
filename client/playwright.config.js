@@ -7,7 +7,7 @@ const config = {
       name: 'chromium',
       use: {
         browserName: 'chromium',
-        baseURL: process.env.SERVICE_URL_FRONTEND || 'https://todo-app-4g2e.onrender.com',
+        baseURL: process.env.SERVICE_URL_FRONTEND || 'http://localhost:3500',
         headless: true,
         viewport: { width: 1280, height: 720 },
         navigationTimeout: 5000,

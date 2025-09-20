@@ -70,12 +70,42 @@ stage('2: Test') {
   steps {
     script {
       catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+
+        echo '→ Starting Back-end locally...'
+        if (fileExists('server/pom.xml')) {
+          dir('server') {
+            bat 'mvn -q -DskipTests package'
+            bat 'start /b java -jar target\\*.jar'
+          }
+          bat '''
+powershell -NoProfile -Command ^
+  "$retries=30; $ok=$false; while($retries -gt 0 -and -not $ok){ ^
+    try{ (Invoke-WebRequest -UseBasicParsing http://localhost:8080).StatusCode -ge 200 -and (Invoke-WebRequest -UseBasicParsing http://localhost:8080).StatusCode -lt 500; $ok=$true } ^
+    catch{ Start-Sleep -Seconds 1; $retries-- } ^
+  }; if(-not $ok){ exit 1 }"
+'''
+        } else {
+          echo '↷ server/pom.xml not found, skipping local backend start'
+        }
+
         if (fileExists('client/package.json')) {
-          echo '→ Testing Front-end...'
+          echo '→ Starting Front-end locally on :3500...'
           dir('client') {
             bat 'npm ci'
+            bat 'start /b cmd /c "set PORT=3500 && npm start"'
+          }
+          bat '''
+powershell -NoProfile -Command ^
+  "$retries=60; $ok=$false; while($retries -gt 0 -and -not $ok){ ^
+    try{ (Invoke-WebRequest -UseBasicParsing http://localhost:3500).StatusCode -ge 200 -and (Invoke-WebRequest -UseBasicParsing http://localhost:3500).StatusCode -lt 500; $ok=$true } ^
+    catch{ Start-Sleep -Seconds 1; $retries-- } ^
+  }; if(-not $ok){ exit 1 }"
+'''
+
+          echo '→ Running Playwright E2E against http://localhost:3500...'
+          dir('client') {
             bat 'npx playwright install --with-deps'
-            bat 'npx playwright test --project=chromium --reporter=junit --output=playwright-report --debug'
+            bat 'set SERVICE_URL_FRONTEND=http://localhost:3500 && npx playwright test --project=chromium --reporter=list,junit --output=playwright-report'
             bat 'if exist .jest-cache (rmdir /s /q .jest-cache) else (echo No cache to delete)'
             bat 'set CI=true && npm run test:ci'
           }
@@ -83,7 +113,7 @@ stage('2: Test') {
           echo '↷ client/ not found, skipping front-end tests'
         }
 
-        echo '→ Testing Back-end...'
+        echo '→ Running Back-end unit tests...'
         if (fileExists('server/pom.xml')) {
           bat 'mvn -f server\\pom.xml test'
         } else {
@@ -102,6 +132,9 @@ stage('2: Test') {
           echo '↷ No Front-end JUnit report found at client/junit.xml'
         }
         junit allowEmptyResults: true, testResults: 'server/target/surefire-reports/*.xml'
+
+        bat 'taskkill /IM node.exe /F || echo node not running'
+        bat 'taskkill /IM java.exe /F || echo java not running'
       }
     }
   }
