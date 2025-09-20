@@ -1,14 +1,20 @@
-const { devices } = require('@playwright/test');
-
 const config = {
-  testDir: './tests', 
-  testMatch: /.*\.js/, 
+  testDir: './tests',
+  timeout: 10000,
   reporter: [['junit', { outputFile: 'playwright-report/results.xml' }]],
-  use: {
-    baseURL: process.env.SERVICE_URL_FRONTEND || 'https://todo-app-4g2e.onrender.com',
-    headless: true,
-    viewport: { width: 1280, height: 720 },
-  },
+  projects: [
+    {
+      name: 'chromium',
+      use: {
+        browserName: 'chromium',
+        baseURL: process.env.SERVICE_URL_FRONTEND || 'https://todo-app-4g2e.onrender.com',
+        headless: true,
+        viewport: { width: 1280, height: 720 },
+        navigationTimeout: 5000,
+        expect: { timeout: 3000 },
+      },
+    },
+  ],
 };
 
 module.exports = config;
