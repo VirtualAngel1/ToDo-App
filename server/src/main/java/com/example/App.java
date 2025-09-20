@@ -1,14 +1,12 @@
 package com.example;
 
-import java.time.LocalDateTime;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+@SpringBootApplication
 public class App {
-
     public static void main(String[] args) {
-        System.out.println(getStartupMessage());
-    }
-
-    public static String getStartupMessage() {
-        return "ToDo Server started successfully at " + LocalDateTime.now();
+        System.out.println("ToDo Server starting...");
+        SpringApplication.run(App.class, args);
     }
 }
