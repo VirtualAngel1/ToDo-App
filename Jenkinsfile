@@ -73,16 +73,11 @@ stage('2: Test') {
         if (fileExists('client/package.json')) {
           echo '→ Testing Front-end...'
           dir('client') {
-                bat 'npm ci'
-                bat 'npx playwright install --with-deps'
-                bat 'npm run test:e2e'
-              }
-            }
-            post {
-              always {
-                junit 'client/playwright-report/*.xml'
-          bat 'if exist .jest-cache (rmdir /s /q .jest-cache) else (echo No cache to delete)'
-          bat 'set CI=true && npm run test:ci'
+            bat 'npm ci'
+            bat 'npx playwright install --with-deps'
+            bat 'npm run test:e2e'
+            bat 'if exist .jest-cache (rmdir /s /q .jest-cache) else (echo No cache to delete)'
+            bat 'set CI=true && npm run test:ci'
           }
         } else {
           echo '↷ client/ not found, skipping front-end tests'
@@ -100,6 +95,7 @@ stage('2: Test') {
   post {
     always {
       script {
+        junit allowEmptyResults: true, testResults: 'client/playwright-report/*.xml'
         if (fileExists('client/junit.xml')) {
           junit allowEmptyResults: true, testResults: 'client/junit.xml'
         } else {
@@ -110,7 +106,6 @@ stage('2: Test') {
     }
   }
 }
-
 
 stage('3: Code Quality') {
   steps {
