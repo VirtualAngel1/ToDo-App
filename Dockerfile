@@ -1,4 +1,4 @@
-FROM maven:3.9.6-eclipse-temurin-17 AS builder
+FROM maven:3.9.6-eclipse-temurin-17 AS backend-builder
 
 WORKDIR /app/server
 COPY server/pom.xml ./
@@ -19,10 +19,6 @@ WORKDIR /app
 COPY --from=backend-builder /app/server/target/*.jar app.jar
 
 COPY --from=frontend-builder /app/client/build ./public
-
-ENV DD_SERVICE=todo-backend \
-    DD_ENV=staging \
-    DD_VERSION=1.0.0
 
 EXPOSE 8085
 
