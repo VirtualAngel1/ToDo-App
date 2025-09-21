@@ -79,7 +79,7 @@ stage('2: Test') {
           }
           bat '''
 @echo off
-set RETRIES=30
+set RETRIES=100
 
 for /L %%i in (1,1,%RETRIES%) do (
   curl -s -o nul -w "%%{http_code}" http://localhost:8085/health | findstr 200 >nul
@@ -109,7 +109,7 @@ echo Proceeding with backend tests.
           }
           bat '''
 @echo off
-set RETRIES=60
+set RETRIES=100
 
 for /L %%i in (1,1,%RETRIES%) do (
   curl -s -o nul -w "%%{http_code}" http://localhost:3500 | findstr 200 >nul
