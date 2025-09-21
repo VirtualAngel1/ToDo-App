@@ -75,14 +75,14 @@ stage('2: Test') {
         if (fileExists('server/pom.xml')) {
           dir('server') {
             bat 'mvn -q -DskipTests package'
-            bat 'start /b java -jar target\\*.jar'
+            bat 'set PORT=8085 && start /b java -jar target\\server-1.0.0.jar'
           }
           bat '''
 @echo off
 set RETRIES=30
 
 for /L %%i in (1,1,%RETRIES%) do (
-  curl -s -o nul -w "%%{http_code}" http://localhost:8085 | findstr 200 >nul
+  curl -s -o nul -w "%%{http_code}" http://localhost:8085/health | findstr 200 >nul
   if not errorlevel 1 (
     echo Backend is up on attempt %%i!
     goto AFTER_BACKEND
