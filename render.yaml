@@ -35,3 +35,5 @@ services:
     envVars:
       - key: REACT_APP_API__URL
         value: https://to-do-app-raw1.onrender.com
+      - key: MONGO_URI
+        value: mongodb+srv://VirtualAngel:<db_password>@to-do.lehsnbq.mongodb.net/?retryWrites=true&w=majority&appName=To-Do
