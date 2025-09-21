@@ -33,5 +33,5 @@ services:
     publishDir: build
     autoDeploy: true
     envVars:
-      - key: REACT_APP_API_BASE_URL
+      - key: REACT_APP_API__URL
         value: https://to-do-app-raw1.onrender.com
