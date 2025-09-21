@@ -2,27 +2,36 @@ services:
   - type: web
     name: to-do-backend
     env: docker
+    rootDir: .
     dockerfilePath: server/Dockerfile
     autoDeploy: true
     healthCheckPath: "/health"
+    secrets:
+      - name: datadog-api-key
+    envVars:
+      - key: DD_API_KEY
+        fromSecret: 7ced6304e53cb93d211411a9ab30f07c
+      - key: DD_SITE
+        value: ap2.datadoghq.com
+      - key: DD_TRACE_AGENT_URL
+        value: https://trace.agent.ap2.datadoghq.com/api/v0.2/traces
+      - key: DD_SERVICE
+        value: to-do-backend
+      - key: DD_ENV
+        value: production
+      - key: DD_VERSION
+        value: "1.0.0"
+      - key: DD_TRACE_ENABLED
+        value: "true"
+      - key: DD_TRACE_DEBUG
+        value: "true"
 
-secrets:
-  - name: datadog-api-key
-
-envVars:
-  - key: DD_API_KEY
-    fromSecret: 7ced6304e53cb93d211411a9ab30f07c
-  - key: DD_SITE
-    value: ap2.datadoghq.com
-  - key: DD_TRACE_AGENT_URL
-    value: https://trace.agent.ap2.datadoghq.com/api/v0.2/traces
-  - key: DD_SERVICE
-    value: to-do-backend
-  - key: DD_ENV
-    value: production
-  - key: DD_VERSION
-    value: "1.0.0"
-  - key: DD_TRACE_ENABLED
-    value: "true"
-  - key: DD_TRACE_DEBUG
-    value: "true"
+  - type: static
+    name: to-do-frontend
+    rootDir: client
+    buildCommand: npm ci && npm run build
+    publishDir: build
+    autoDeploy: true
+    envVars:
+      - key: REACT_APP_API_BASE_URL
+        value: https://to-do-app-raw1.onrender.com
