@@ -78,11 +78,24 @@ stage('2: Test') {
             bat 'start /b java -jar target\\*.jar'
           }
           bat '''
-powershell -NoProfile -Command ^
-  "$retries=30; $ok=$false; while($retries -gt 0 -and -not $ok){ ^
-    try{ (Invoke-WebRequest -UseBasicParsing http://localhost:8080).StatusCode -ge 200 -and (Invoke-WebRequest -UseBasicParsing http://localhost:8080).StatusCode -lt 500; $ok=$true } ^
-    catch{ Start-Sleep -Seconds 1; $retries-- } ^
-  }; if(-not $ok){ exit 1 }"
+@echo off
+set RETRIES=30
+
+for /L %%i in (1,1,%RETRIES%) do (
+  curl -s -o nul -w "%%{http_code}" http://localhost:8085 | findstr 200 >nul
+  if not errorlevel 1 (
+    echo Backend is up on attempt %%i!
+    goto AFTER_BACKEND
+  )
+  echo Waiting for backend... (%%i/%RETRIES%)
+  timeout /t 1 >nul
+)
+
+echo ERROR: Backend did not start within %RETRIES% seconds.
+exit /b 1
+
+:AFTER_BACKEND
+echo Proceeding with backend tests.
 '''
         } else {
           echo '↷ server/pom.xml not found, skipping local backend start'
@@ -95,11 +108,24 @@ powershell -NoProfile -Command ^
             bat 'start /b cmd /c "set PORT=3500 && npm start"'
           }
           bat '''
-powershell -NoProfile -Command ^
-  "$retries=60; $ok=$false; while($retries -gt 0 -and -not $ok){ ^
-    try{ (Invoke-WebRequest -UseBasicParsing http://localhost:3500).StatusCode -ge 200 -and (Invoke-WebRequest -UseBasicParsing http://localhost:3500).StatusCode -lt 500; $ok=$true } ^
-    catch{ Start-Sleep -Seconds 1; $retries-- } ^
-  }; if(-not $ok){ exit 1 }"
+@echo off
+set RETRIES=60
+
+for /L %%i in (1,1,%RETRIES%) do (
+  curl -s -o nul -w "%%{http_code}" http://localhost:3500 | findstr 200 >nul
+  if not errorlevel 1 (
+    echo Frontend is up on attempt %%i!
+    goto AFTER_FRONTEND
+  )
+  echo Waiting for frontend... (%%i/%RETRIES%)
+  timeout /t 1 >nul
+)
+
+echo ERROR: Frontend did not start within %RETRIES% seconds.
+exit /b 1
+
+:AFTER_FRONTEND
+echo Proceeding with frontend tests.
 '''
 
           echo '→ Running Playwright E2E against http://localhost:3500...'
