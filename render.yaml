@@ -25,6 +25,8 @@ services:
         value: "true"
       - key: DD_TRACE_DEBUG
         value: "true"
+      - key: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY
+        value: DEBUG
 
   - type: static
     name: to-do-frontend
