@@ -131,7 +131,11 @@ echo Proceeding with frontend tests.
           echo '→ Running Playwright E2E against http://localhost:3500...'
           dir('client') {
             bat 'npx playwright install --with-deps'
+<<<<<<< HEAD
             bat 'set SERVICE_URL_FRONTEND=http://localhost:3500 && npx playwright test --project=chromium --reporter=list,junit --output=playwright-report'
+=======
+            bat 'npm run test:e2e'
+>>>>>>> parent of e44ca7e (Redeploy)
             bat 'if exist .jest-cache (rmdir /s /q .jest-cache) else (echo No cache to delete)'
             bat 'set CI=true && npm run test:ci'
           }
