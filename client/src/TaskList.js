@@ -1,26 +1,30 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
 
-function TaskList({ authToken, onLogout }) {
+export default function TaskList({ token, onLogout }) {
   const [tasks, setTasks] = useState([])
-  const [text, setText] = useState('')
+  const [text, setText]   = useState('')
+
+  const API_BASE = process.env.REACT_APP_API_URL || ''
 
   const loadTasks = useCallback(async () => {
     try {
       const res = await axios.get(
-        `${process.env.REACT_APP_API_URL}/api/tasks`,
-        { headers: { Authorization: `Bearer ${authToken}` } }
+        `${API_BASE}/api/tasks`,
+        { headers: { Authorization: `Bearer ${token}` } }
       )
       setTasks(res.data)
     } catch (err) {
       console.error('Load tasks error:', err.response || err)
       alert('Failed to load tasks')
     }
-  }, [authToken])
+  }, [token, API_BASE])
 
   useEffect(() => {
-    loadTasks()
-  }, [loadTasks])
+    if (token) {
+      loadTasks()
+    }
+  }, [token, loadTasks])
 
   const addTask = async e => {
     e.preventDefault()
@@ -28,9 +32,9 @@ function TaskList({ authToken, onLogout }) {
 
     try {
       const res = await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/tasks`,
+        `${API_BASE}/api/tasks`,
         { text },
-        { headers: { Authorization: `Bearer ${authToken}` } }
+        { headers: { Authorization: `Bearer ${token}` } }
       )
       setTasks(prev => [...prev, res.data])
       setText('')
@@ -43,9 +47,9 @@ function TaskList({ authToken, onLogout }) {
   const toggleComplete = async (id, completed) => {
     try {
       const res = await axios.put(
-        `${process.env.REACT_APP_API_URL}/api/tasks/${id}`,
+        `${API_BASE}/api/tasks/${id}`,
         { completed: !completed },
-        { headers: { Authorization: `Bearer ${authToken}` } }
+        { headers: { Authorization: `Bearer ${token}` } }
       )
       setTasks(prev =>
         prev.map(t => (t._id === id ? res.data : t))
@@ -59,8 +63,8 @@ function TaskList({ authToken, onLogout }) {
   const deleteTask = async id => {
     try {
       await axios.delete(
-        `${process.env.REACT_APP_API_URL}/api/tasks/${id}`,
-        { headers: { Authorization: `Bearer ${authToken}` } }
+        `${API_BASE}/api/tasks/${id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
       )
       setTasks(prev => prev.filter(t => t._id !== id))
     } catch (err) {
@@ -99,7 +103,9 @@ function TaskList({ authToken, onLogout }) {
         {tasks.map(task => (
           <li key={task._id} className={task.completed ? 'completed' : ''}>
             <span className="title">{task.text}</span>
-            <button onClick={() => toggleComplete(task._id, task.completed)}>
+            <button
+              onClick={() => toggleComplete(task._id, task.completed)}
+            >
               {task.completed ? '↩︎' : '✅'}
             </button>
             <button onClick={() => deleteTask(task._id)}>✕</button>
@@ -109,5 +115,3 @@ function TaskList({ authToken, onLogout }) {
     </main>
   )
 }
-
-export default TaskList

@@ -8,11 +8,26 @@ function LoginForm({ onLogin }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    const loginUrl = `${process.env.REACT_APP_API_URL}/api/login`
+    console.log('handleSubmit...', { username, password })
+    const loginUrl = '/api/login'
     console.log('Calling login endpoint:', loginUrl)
 
+    const params = new URLSearchParams()
+    params.append('username', username)
+    params.append('password', password)
+
     try {
-      const res = await axios.post(loginUrl, { username, password })
+      const res = await axios.post(
+        loginUrl,
+        params,
+        {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          withCredentials: true
+        }
+      )
+      console.log('Login success:', res.status)
       onLogin(res.data.token)
     } catch (err) {
       console.error('Login error:', err.response?.data || err)

@@ -12,7 +12,7 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "cross-env PORT=3500 react-scripts start",
     "build": "react-scripts build --verbose --stats=verbose",
     "test": "react-scripts test",
     "test:list": "set CI=true&& set TEMP=.tmp&& set TMP=.tmp&& set JEST_CACHE_DIRECTORY=.jest-cache&& react-scripts test --no-cache --listTests --watchAll=false",
@@ -43,6 +43,7 @@
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/react": "^16.3.0",
     "cross-env": "^7.0.3",
+    "http-proxy-middleware": "^3.0.5",
     "jest-junit": "^16.0.0",
     "typescript": "^4.9.5"
   },

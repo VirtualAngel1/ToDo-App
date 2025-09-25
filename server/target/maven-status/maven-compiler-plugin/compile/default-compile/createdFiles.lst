@@ -2,7 +2,8 @@ com\example\config\WebConfig$1.class
 com\example\controller\AuthController.class
 com\example\repository\UserRepository.class
 com\example\App.class
+com\example\controller\PingController.class
 com\example\HealthController.class
-SecurityConfig.class
+com\example\config\SecurityConfig.class
 com\example\model\User.class
 com\example\config\WebConfig.class

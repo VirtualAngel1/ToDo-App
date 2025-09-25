@@ -8,30 +8,72 @@
 </head>
 <body>
   <main class="todo-app" role="application" aria-label="To-Do List Application">
-    
-    <section id="auth-section" style="display: block;" aria-label="User Authentication">
-      <h1>Login</h1>
+    <h1 id="page-title">Login</h1>
+
+    <section id="auth-section" aria-label="User Authentication">
       <form id="login-form">
-        <input type="text" id="username" placeholder="Username" required aria-label="Username" />
-        <input type="password" id="password" placeholder="Password" required aria-label="Password" />
-        <button type="submit">Login</button>
+        <input
+          type="text"
+          id="username"
+          placeholder="Username"
+          required
+          aria-label="Username"
+        />
+        <input
+          type="password"
+          id="password"
+          placeholder="Password"
+          required
+          aria-label="Password"
+        />
+        <button type="submit">Sign In</button>
       </form>
     </section>
 
-    <section id="task-section" style="display: none;" aria-label="Task Management">
-      <button id="logout-btn">Logout</button>
-      
-      <form id="task-form">
-        <input type="text" id="task-input" placeholder="Enter a task..." required aria-label="Task input" />
-        <button type="submit">Add Task</button>
-      </form>
+    <section id="task-section" aria-label="Task List" class="hidden">
+      <div id="task-form-wrapper">
 
-      <ul id="task-list" aria-live="polite">
-      </ul>
+        <div id="search-wrapper" class="cascade-item delay-1">
+          <label for="task-search" class="visually-hidden"></label>
+          <input
+            type="text"
+            id="task-search"
+            placeholder="Search tasks..."
+            aria-label="Search tasks"
+          />
+        </div>
+
+        <form id="task-form">
+          <input
+            type="text"
+            id="task-input"
+            class="cascade-item delay-2"
+            placeholder="Enter a task..."
+            required
+            aria-label="Task input"
+          />
+          <button type="submit" class="cascade-item delay-3">Add Task</button>
+        </form>
+
+        <ul id="task-list" aria-live="polite"></ul>
+
+        <p id="no-tasks-message" class="hidden cascade-item delay-4">
+          No tasks yet.<br>
+          <span class="subtext">Add one above!</span>
+        </p>
+
+        <button
+          id="logout-btn"
+          type="button"
+          class="cascade-item delay-5"
+        >
+          Logout
+        </button>
+
+      </div>
     </section>
-    
   </main>
 
-  <script src="script.js" defer></script>
+  <script src="script.js"></script>
 </body>
 </html>

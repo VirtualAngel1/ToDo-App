@@ -1,7 +1,6 @@
 const { devices } = require('@playwright/test');
 
 const config = {
-<<<<<<< HEAD
   testDir: './tests',
   timeout: 1000000,
   reporter: [['junit', { outputFile: 'playwright-report/results.xml' }]],
@@ -18,7 +17,6 @@ const config = {
       },
     },
   ],
-=======
   testDir: './tests', 
   testMatch: /.*\.js/, 
   reporter: [['junit', { outputFile: 'playwright-report/results.xml' }]],
@@ -27,7 +25,6 @@ const config = {
     headless: true,
     viewport: { width: 1280, height: 720 },
   },
->>>>>>> parent of e44ca7e (Redeploy)
 };
 
 module.exports = config;
