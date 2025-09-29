@@ -75,7 +75,7 @@ stage('2: Test') {
         if (fileExists('server/pom.xml')) {
           dir('server') {
             bat 'mvn -q -DskipTests package'
-            bat 'set PORT=8085 && java -jar target\\server-1.0.0.jar > backend.log 2>&1 &'
+            bat 'set PORT=8085 && start "" java -jar target\\server-1.0.0.jar > backend.log 2>&1'
           }
 
           bat '''
