@@ -75,14 +75,15 @@ stage('2: Test') {
         if (fileExists('server/pom.xml')) {
           dir('server') {
             bat 'mvn -q -DskipTests package'
-            bat 'set PORT=8085 && start /b java -jar target\\server-1.0.0.jar'
+            bat 'set PORT=8085 && java -jar target\\server-1.0.0.jar > backend.log 2>&1 &'
           }
+
           bat '''
 @echo off
 set RETRIES=100
 
 for /L %%i in (1,1,%RETRIES%) do (
-  curl -s -o nul -w "%%{http_code}" http://localhost:8085/health | findstr 200 >nul
+  curl -s -o nul -w "%%{http_code}" http://localhost:8085/api/ping | findstr 200 >nul
   if not errorlevel 1 (
     echo Backend is up on attempt %%i!
     goto AFTER_BACKEND
@@ -101,12 +102,13 @@ echo Proceeding with backend tests.
           echo '↷ server/pom.xml not found, skipping local backend start'
         }
 
+        echo '→ Starting Front-end locally on :3500...'
         if (fileExists('client/package.json')) {
-          echo '→ Starting Front-end locally on :3500...'
           dir('client') {
             bat 'npm ci'
             bat 'start /b cmd /c "set PORT=3500 && npm start"'
           }
+
           bat '''
 @echo off
 set RETRIES=100
