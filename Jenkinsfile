@@ -116,14 +116,17 @@ start "" /min cmd /c "npm start > frontend.log 2>&1"
 
           bat '''
 @echo off
-set RETRIES=100
+set RETRIES=120
 for /L %%i in (1,1,%RETRIES%) do (
   curl -s http://localhost:3500 | findstr "<title>To-Do App</title>" >nul
   if not errorlevel 1 (
-    echo Frontend is up on attempt %%i!
-    goto AFTER_FRONTEND
+    curl -s http://localhost:3500/static/js/bundle.js | findstr "React" >nul
+    if not errorlevel 1 (
+      echo Frontend fully ready on attempt %%i!
+      goto AFTER_FRONTEND
+    )
   )
-  echo Waiting for frontend... (%%i/%RETRIES%)
+  echo Waiting for frontend bundle... (%%i/%RETRIES%)
   timeout /t 1 >nul
 )
 echo ERROR: Frontend did not start within %RETRIES% seconds.
