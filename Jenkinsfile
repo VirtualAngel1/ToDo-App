@@ -86,7 +86,7 @@ start "" /min java -jar target\\server-1.0.0.jar > backend.log 2>&1
 @echo off
 set RETRIES=100
 for /L %%i in (1,1,%RETRIES%) do (
-  curl -s -o nul -w "%%{http_code}" http://localhost:8085/api/ping | findstr 200 >nul
+  curl -s -o nul -w "%%{http_code}" http://127.0.0.1:8085/api/ping | findstr 200 >nul
   if not errorlevel 1 (
     echo Backend is up on attempt %%i!
     goto AFTER_BACKEND
@@ -118,9 +118,9 @@ start "" /min cmd /c "npm start > frontend.log 2>&1"
 @echo off
 set RETRIES=120
 for /L %%i in (1,1,%RETRIES%) do (
-  curl -s http://localhost:3500 | findstr "<title>To-Do App</title>" >nul
+  curl -s http://127.0.0.1:3500 | findstr "<title>To-Do App</title>" >nul
   if not errorlevel 1 (
-    curl -s http://localhost:3500/static/js/bundle.js | findstr "React" >nul
+    curl -s http://127.0.0.1:3500/static/js/bundle.js | findstr "React" >nul
     if not errorlevel 1 (
       echo Frontend fully ready on attempt %%i!
       goto AFTER_FRONTEND
@@ -135,10 +135,13 @@ exit /b 1
 echo Proceeding with frontend tests.
 '''
 
-          echo '→ Running Playwright E2E against http://localhost:3500...'
+          echo '→ Running Playwright E2E against http://127.0.0.1:3500...'
           dir('client') {
-            bat 'npx playwright install --with-deps'
-            bat 'set SERVICE_URL_FRONTEND=http://localhost:3500 && npx playwright test --project=chromium --reporter=list --trace on'
+            echo '→ Installing Playwright browsers (first run may take a few minutes)...'
+            bat 'set PLAYWRIGHT_BROWSERS_PATH=C:\\playwright-browsers && npx playwright install --with-deps'
+            echo '✔ Playwright browsers installed.'
+
+            bat 'set SERVICE_URL_FRONTEND=http://127.0.0.1:3500 && npx playwright test --project=chromium --reporter=list --trace on'
             echo '✔ Playwright test completed — proceeding to cleanup...'
           }
         } else {
