@@ -135,7 +135,7 @@ echo Proceeding with frontend tests.
           echo '→ Running Playwright E2E against http://localhost:3500...'
           dir('client') {
             bat 'npx playwright install --with-deps'
-            bat 'npx playwright test --project=chromium --reporter=list --trace on'
+            bat 'set SERVICE_URL_FRONTEND=http://localhost:3500 && npx playwright test --project=chromium --reporter=list --trace on'
             echo '✔ Playwright test completed — proceeding to cleanup...'
           }
         } else {
