@@ -136,6 +136,7 @@ echo Proceeding with frontend tests.
           dir('client') {
             bat 'npx playwright install --with-deps'
             bat 'npx playwright test --project=chromium --reporter=list --trace on'
+            echo '✔ Playwright test completed — proceeding to cleanup...'
           }
         } else {
           echo '↷ client/ not found, skipping front-end tests'
@@ -156,8 +157,13 @@ echo Proceeding with frontend tests.
         junit allowEmptyResults: true, testResults: 'client/playwright-report/*.xml'
         junit allowEmptyResults: true, testResults: 'server/target/surefire-reports/*.xml'
 
+        echo '→ Killing node.exe...'
         bat 'taskkill /IM node.exe /F || echo node not running'
+        echo '→ node.exe kill attempted.'
+
+        echo '→ Killing java.exe...'
         bat 'taskkill /IM java.exe /F || echo java not running'
+        echo '→ java.exe kill attempted.'
       }
     }
   }
