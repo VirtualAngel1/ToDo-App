@@ -107,7 +107,11 @@ echo Proceeding with backend tests.
         if (fileExists('client/package.json')) {
           dir('client') {
             bat 'npm ci'
-            bat 'start /b cmd /c "set PORT=3500 && npm start"'
+            bat '''
+@echo off
+set PORT=3500
+start "" /min cmd /c "npm start > frontend.log 2>&1"
+'''
           }
 
           bat '''
