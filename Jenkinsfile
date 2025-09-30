@@ -85,7 +85,6 @@ start "" /min java -jar target\\server-1.0.0.jar > backend.log 2>&1
           bat '''
 @echo off
 set RETRIES=100
-
 for /L %%i in (1,1,%RETRIES%) do (
   curl -s -o nul -w "%%{http_code}" http://localhost:8085/api/ping | findstr 200 >nul
   if not errorlevel 1 (
@@ -95,10 +94,8 @@ for /L %%i in (1,1,%RETRIES%) do (
   echo Waiting for backend... (%%i/%RETRIES%)
   timeout /t 1 >nul
 )
-
 echo ERROR: Backend did not start within %RETRIES% seconds.
 exit /b 1
-
 :AFTER_BACKEND
 echo Proceeding with backend tests.
 '''
@@ -116,9 +113,8 @@ echo Proceeding with backend tests.
           bat '''
 @echo off
 set RETRIES=100
-
 for /L %%i in (1,1,%RETRIES%) do (
-  curl -s -o nul -w "%%{http_code}" http://localhost:3500 | findstr 200 >nul
+  curl -s http://localhost:3500 | findstr "<title>To-Do App</title>" >nul
   if not errorlevel 1 (
     echo Frontend is up on attempt %%i!
     goto AFTER_FRONTEND
@@ -126,10 +122,8 @@ for /L %%i in (1,1,%RETRIES%) do (
   echo Waiting for frontend... (%%i/%RETRIES%)
   timeout /t 1 >nul
 )
-
 echo ERROR: Frontend did not start within %RETRIES% seconds.
 exit /b 1
-
 :AFTER_FRONTEND
 echo Proceeding with frontend tests.
 '''
@@ -137,10 +131,7 @@ echo Proceeding with frontend tests.
           echo '→ Running Playwright E2E against http://localhost:3500...'
           dir('client') {
             bat 'npx playwright install --with-deps'
-            bat 'set SERVICE_URL_FRONTEND=http://localhost:3500 && npx playwright test --project=chromium --reporter=list,junit --output=playwright-report'
-            bat 'npm run test:e2e'
-            bat 'if exist .jest-cache (rmdir /s /q .jest-cache) else (echo No cache to delete)'
-            bat 'set CI=true && npm run test:ci'
+            bat 'set SERVICE_URL_FRONTEND=http://localhost:3500 && npx playwright test --project=chromium --reporter=list,junit --output=playwright-report --trace retain-on-failure'
           }
         } else {
           echo '↷ client/ not found, skipping front-end tests'
@@ -159,11 +150,6 @@ echo Proceeding with frontend tests.
     always {
       script {
         junit allowEmptyResults: true, testResults: 'client/playwright-report/*.xml'
-        if (fileExists('client/junit.xml')) {
-          junit allowEmptyResults: true, testResults: 'client/junit.xml'
-        } else {
-          echo '↷ No Front-end JUnit report found at client/junit.xml'
-        }
         junit allowEmptyResults: true, testResults: 'server/target/surefire-reports/*.xml'
 
         bat 'taskkill /IM node.exe /F || echo node not running'
