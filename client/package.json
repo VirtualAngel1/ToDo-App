@@ -12,7 +12,7 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "cross-env PORT=3500 react-scripts start",
+    "start": "cross-env PORT=3500 react-scripts start --host 0.0.0.0",
     "build": "react-scripts build --verbose --stats=verbose",
     "test": "react-scripts test",
     "test:list": "set CI=true&& set TEMP=.tmp&& set TMP=.tmp&& set JEST_CACHE_DIRECTORY=.jest-cache&& react-scripts test --no-cache --listTests --watchAll=false",
