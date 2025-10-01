@@ -65,6 +65,7 @@ pipeline {
         }
       }
     }
+  }
 
 stage('2: Test') {
   steps {
@@ -126,7 +127,7 @@ for /L %%i in (1,1,%RETRIES%) do (
       goto AFTER_FRONTEND
     )
   )
-  echo Waiting for frontend bundle... (%%i/%RETRIES%)
+  echo Waiting for frontend... (%%i/%RETRIES%)
   timeout /t 1 >nul
 )
 echo ERROR: Frontend did not start within %RETRIES% seconds.
@@ -243,139 +244,153 @@ stage('4: Security') {
       archiveArtifacts artifacts: 'snyk-frontend.json,snyk-backend.json'
     }
     unstable {
-      echo '⚠️ One or more Snyk scans found vulnerabilities. See console log for summary and JSON reports for details.'
+      echo 'One or more Snyk scans found vulnerabilities. See console log for summary and JSON reports for details.'
+    }
+    success {
+      echo 'No vulnerabilities found. All Snyk scans passed cleanly.'
     }
   }
 }
 
-    stage('5: Deploy to Staging') {
-      steps {
-        script {
-          catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-            echo '→ Deploying to local staging environment with Docker Compose...'
-            echo "Workspace: ${env.WORKSPACE}"
+stage('5: Deploy to Staging') {
+  steps {
+    script {
+      catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
+        echo '→ Deploying to local staging environment with Docker Compose...'
+        echo "Workspace: ${env.WORKSPACE}"
 
-            bat '''
-              echo --- Workspace root listing ---
-              dir /b
-              echo ------------------------------
-            '''
+        bat '''
+          echo --- Workspace root listing ---
+          dir /b
+          echo ------------------------------
+        '''
 
-            def composeFile = bat(
-              returnStdout: true,
-              label: 'Resolve compose file',
-              script: '''
-                @echo off
-                setlocal enabledelayedexpansion
-                set FOUND=
+        def composeFile = bat(
+          returnStdout: true,
+          label: 'Resolve compose file',
+          script: '''
+            @echo off
+            setlocal enabledelayedexpansion
+            set FOUND=
 
-                rem Check root
-                for %%F in (docker-compose.yml docker-compose.yaml) do (
-                  if exist "%%F" set FOUND=%%F
+            rem Check root
+            for %%F in (docker-compose.yml docker-compose.yaml) do (
+              if exist "%%F" set FOUND=%%F
+            )
+
+            rem Check common subfolders
+            if not defined FOUND (
+              for %%P in (docker deploy compose) do (
+                for %%E in (yml yaml) do (
+                  if exist "%%P\\docker-compose.%%E" set FOUND=%%P\\docker-compose.%%E
+                  if exist "%%P\\compose.%%E" set FOUND=%%P\\compose.%%E
                 )
-
-                rem Check common subfolders
-                if not defined FOUND (
-                  for %%P in (docker deploy compose) do (
-                    for %%E in (yml yaml) do (
-                      if exist "%%P\\docker-compose.%%E" set FOUND=%%P\\docker-compose.%%E
-                      if exist "%%P\\compose.%%E" set FOUND=%%P\\compose.%%E
-                    )
-                  )
-                )
-
-                if not defined FOUND (
-                  echo NONE
-                ) else (
-                  echo !FOUND!
-                )
-              '''
-            ).trim()
-
-            if (composeFile == 'NONE' || !fileExists(composeFile)) {
-              error "❌ No docker-compose file found in workspace."
-            }
-
-            echo "✅ Using docker compose file: ${composeFile}"
-
-            bat "docker compose -f \"${composeFile}\" down || exit 0"
-            bat "docker compose -f \"${composeFile}\" up -d --build"
-            bat 'ping -n 6 127.0.0.1 > nul && curl -f http://localhost:3000/health'
-          }
-        }
-      }
-    }
-        stage('6: Release to Production') {
-      when { branch 'main' }
-      steps {
-        script {
-          catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-            echo '→ Front-end production deploy to Render...'
-            bat """
-              curl -X POST https://api.render.com/deploy/${RENDER_FRONTEND_ID}/webhook ^
-                -H "Authorization: Bearer ${RENDER_API_KEY}" ^
-                -H "Accept: application/json"
-            """
-            echo '→ Back-end production deploy to Render...'
-            bat """
-              curl -X POST https://api.render.com/deploy/${RENDER_BACKEND_ID}/webhook ^
-                -H "Authorization: Bearer ${RENDER_API_KEY}" ^
-                -H "Accept: application/json"
-            """
-          }
-        }
-      }
-      post {
-        success {
-          script { currentBuild.displayName = "prod-${env.BUILD_NUMBER}" }
-        }
-      }
-    }
-
-    stage('7: Monitoring') {
-      steps {
-        script {
-          catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-            bat '''
-              if not exist jq.exe (
-                echo Downloading jq.exe...
-                powershell -Command "Invoke-WebRequest -Uri https://github.com/stedolan/jq/releases/latest/download/jq-win64.exe -OutFile jq.exe"
               )
-            '''
-            withCredentials([string(credentialsId: 'better-uptime-token', variable: 'BU_TOKEN')]) {
-              bat """
-                @echo off
-                setlocal enabledelayedexpansion
+            )
 
-                set "URL=https://to-do-app-raw1.onrender.com"
+            if not defined FOUND (
+              echo NONE
+            ) else (
+              echo !FOUND!
+            )
+          '''
+        ).trim()
 
-                curl -s -H "Authorization: Token token=%BU_TOKEN%" ^
-                    "https://api.betteruptime.com/api/v2/incidents?filter[status]=open^&filter[monitor_url]=!URL!" ^
-                    > response.json
-
-                for /f %%c in ('jq.exe ".data | length" response.json') do set COUNT=%%c
-
-                if !COUNT! GTR 0 (
-                  echo Better Uptime reports !COUNT! open incident(s)
-                  exit /b 1
-                ) else (
-                  echo ✅ No open incidents reported by Better Uptime
-                )
-
-                endlocal
-              """
-            }
-          }
+        if (composeFile == 'NONE' || !fileExists(composeFile)) {
+          echo "⚠️ No docker-compose file found in workspace."
+          return
         }
+
+        echo "✅ Using docker compose file: ${composeFile}"
+
+        echo "→ Pulling base images..."
+        bat 'docker pull maven:3.9.6-eclipse-temurin-17 || exit 0'
+        bat 'docker pull node:20-alpine || exit 0'
+        bat 'docker pull eclipse-temurin:17-jre || exit 0'
+
+        bat "docker compose -f \"${composeFile}\" down || exit 0"
+        bat "docker compose -f \"${composeFile}\" up -d --build || exit 0"
+
+        bat 'ping -n 6 127.0.0.1 > nul && curl -f http://localhost:8085/health || exit 0'
       }
-      post {
-        failure {
-          slackSend channel: '#prod-alerts', color: 'danger',
-            message: "Monitoring failed: Open incidents in Better Uptime."
+    }
+  }
+}
+
+stage('6: Release to Production') {
+  when { branch 'main' }
+  steps {
+    script {
+      catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+        echo '→ Front-end production deploy to Render...'
+        bat """
+          curl -f -X POST https://api.render.com/deploy/${RENDER_FRONTEND_ID}/webhook ^
+            -H "Authorization: Bearer ${RENDER_API_KEY}" ^
+            -H "Accept: application/json"
+        """
+        echo '→ Back-end production deploy to Render...'
+        bat """
+          curl -f -X POST https://api.render.com/deploy/${RENDER_BACKEND_ID}/webhook ^
+            -H "Authorization: Bearer ${RENDER_API_KEY}" ^
+            -H "Accept: application/json"
+        """
+      }
+    }
+  }
+  post {
+    success {
+      script { currentBuild.displayName = "prod-${env.BUILD_NUMBER}" }
+    }
+  }
+}
+
+stage('7: Monitoring') {
+  steps {
+    script {
+      catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+        withCredentials([string(credentialsId: 'better-uptime-token', variable: 'BU_TOKEN')]) {
+          powershell '''
+            $ErrorActionPreference = "Stop"
+
+            $url = "https://to-do-app-raw1.onrender.com"
+            $headers = @{ "Authorization" = "Token token=$env:BU_TOKEN" }
+
+            Write-Host "→ Checking Better Uptime for open incidents on $url ..."
+
+            try {
+              # Call Better Uptime API
+              $response = Invoke-RestMethod -Uri "https://api.betteruptime.com/api/v2/incidents?filter[status]=open&filter[monitor_url]=$url" -Headers $headers
+
+              # Count open incidents
+              $count = $response.data.Count
+
+              if ($count -gt 0) {
+                Write-Host "❌ Better Uptime reports $count open incident(s)"
+                # Optionally print summaries
+                foreach ($incident in $response.data) {
+                  Write-Host " - [$($incident.id)] $($incident.attributes.summary)"
+                }
+                exit 1
+              } else {
+                Write-Host "✅ No open incidents reported by Better Uptime"
+              }
+            }
+            catch {
+              Write-Host "⚠️ Monitoring check failed: $($_.Exception.Message)"
+              exit 1
+            }
+          '''
         }
       }
     }
   }
+  post {
+    unsuccessful {
+      slackSend channel: '#prod-alerts', color: 'danger',
+        message: "Monitoring warning/failure: Open incidents in Better Uptime."
+    }
+  }
+}
 
   post {
     success  { echo '✅ Pipeline completed successfully.' }
