@@ -64,8 +64,6 @@ pipeline {
           }
         }
       }
-    }
-  }
 
 stage('2: Test') {
   steps {
