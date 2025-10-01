@@ -353,7 +353,7 @@ stage('7: Monitoring') {
           powershell '''
             $ErrorActionPreference = "Stop"
 
-            $url = "https://to-do-app-raw1.onrender.com"
+            $url = "https://todo-app-4g2e.onrender.com"
             $headers = @{ "Authorization" = "Token token=$env:BU_TOKEN" }
 
             Write-Host "→ Checking Better Uptime for open incidents on $url ..."
