@@ -324,14 +324,13 @@ stage('6: Release to Production') {
       catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
         echo '→ Front-end production deploy to Render...'
         bat """
-          curl -f -X POST https://api.render.com/deploy/${RENDER_FRONTEND_ID}/webhook ^
-            -H "Authorization: Bearer ${RENDER_API_KEY}" ^
+          curl -f -X POST "https://api.render.com/deploy/srv-d31s9v2dbo4c739tapn0?key=zCYbhkStpjE" ^
             -H "Accept: application/json"
         """
+
         echo '→ Back-end production deploy to Render...'
         bat """
-          curl -f -X POST https://api.render.com/deploy/${RENDER_BACKEND_ID}/webhook ^
-            -H "Authorization: Bearer ${RENDER_API_KEY}" ^
+          curl -f -X POST "https://api.render.com/deploy/srv-d31s2kjipnbc73cko4cg?key=UvvpivLS7LI" ^
             -H "Accept: application/json"
         """
       }
@@ -339,7 +338,9 @@ stage('6: Release to Production') {
   }
   post {
     success {
-      script { currentBuild.displayName = "prod-${env.BUILD_NUMBER}" }
+      script {
+        currentBuild.displayName = "prod-${env.BUILD_NUMBER}"
+      }
     }
   }
 }
