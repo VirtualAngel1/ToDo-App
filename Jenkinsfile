@@ -192,33 +192,61 @@ stage('3: Code Quality') {
   }
 }
 
-    stage('4: Security') {
-      steps {
-        script {
-          catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-            echo '→ Downloading Snyk CLI...'
-            bat '''
-              if not exist snyk.exe (
-                powershell -Command "Invoke-WebRequest -Uri https://downloads.snyk.io/cli/stable/snyk-win.exe -OutFile snyk.exe"
-              )
-            '''
-            echo '→ Scanning Front-end with Snyk...'
-            bat '.\\snyk.exe auth %SNYK_TOKEN%'
-            bat '.\\snyk.exe test client --severity-threshold=high --json > snyk-frontend.json'
-            echo '→ Scanning Back-end with Snyk...'
-            bat '.\\snyk.exe test server --severity-threshold=high --json > snyk-backend.json'
-          }
-        }
-      }
-      post {
-        always {
-          archiveArtifacts artifacts: 'snyk-frontend.json,snyk-backend.json'
-        }
-        failure {
-          echo 'One or more Snyk scans failed, please view the JSON reports.'
-        }
+stage('4: Security') {
+  steps {
+    script {
+      catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
+        echo '→ Downloading Snyk CLI...'
+        bat '''
+          if not exist snyk.exe (
+            powershell -Command "Invoke-WebRequest -Uri https://downloads.snyk.io/cli/stable/snyk-win.exe -OutFile snyk.exe"
+          )
+        '''
+
+        echo '→ Authenticating Snyk...'
+        bat '.\\snyk.exe auth %SNYK_TOKEN%'
+
+        echo '→ Scanning Front-end with Snyk...'
+        bat '.\\snyk.exe test client --severity-threshold=high --json > snyk-frontend.json'
+
+        echo '→ Scanning Back-end with Snyk...'
+        bat '.\\snyk.exe test server --severity-threshold=high --json > snyk-backend.json'
+
+        echo '→ Parsing Snyk Front-end results...'
+        bat '''
+        powershell -Command ^
+          "$data = Get-Content snyk-frontend.json | ConvertFrom-Json; ^
+           if ($data.vulnerabilities) { ^
+             Write-Output '=== Front-end Vulnerabilities Found ==='; ^
+             foreach ($v in $data.vulnerabilities) { ^
+               Write-Output ('- ' + $v.severity.ToUpper() + ' | ' + $v.title + ' in ' + $v.packageName + '@' + $v.version) ^
+             } ^
+           } else { Write-Output 'No front-end vulnerabilities found.' }"
+        '''
+
+        echo '→ Parsing Snyk Back-end results...'
+        bat '''
+        powershell -Command ^
+          "$data = Get-Content snyk-backend.json | ConvertFrom-Json; ^
+           if ($data.vulnerabilities) { ^
+             Write-Output '=== Back-end Vulnerabilities Found ==='; ^
+             foreach ($v in $data.vulnerabilities) { ^
+               Write-Output ('- ' + $v.severity.ToUpper() + ' | ' + $v.title + ' in ' + $v.packageName + '@' + $v.version) ^
+             } ^
+           } else { Write-Output 'No back-end vulnerabilities found.' }"
+        '''
       }
     }
+  }
+  post {
+    always {
+      archiveArtifacts artifacts: 'snyk-frontend.json,snyk-backend.json'
+    }
+    unstable {
+      echo '⚠️ One or more Snyk scans found vulnerabilities. See console log for summary and JSON reports for details.'
+    }
+  }
+}
 
     stage('5: Deploy to Staging') {
       steps {
