@@ -391,9 +391,10 @@ stage('7: Monitoring') {
   }
 }
 
-  post {
-    success  { echo '✅ Pipeline completed successfully.' }
-    unstable { echo '⚠️ Pipeline completed with warnings or test failures.' }
-    failure  { echo '❌ Pipeline failed, please check console output and artifacts.' }
+      post {
+        success  { echo '✅ Pipeline completed successfully.' }
+        unstable { echo '⚠️ Pipeline completed with warnings or test failures.' }
+        failure  { echo '❌ Pipeline failed, please check console output and artifacts.' }
+      }
+    }
   }
-}
