@@ -324,13 +324,13 @@ stage('6: Release to Production') {
       catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
         echo '→ Front-end production deploy to Render...'
         bat """
-          curl -f -X POST "https://api.render.com/deploy/srv-d31s9v2dbo4c739tapn0?key=zCYbhkStpjE" ^
+          curl -k -f -X POST "https://api.render.com/deploy/srv-d31s9v2dbo4c739tapn0?key=zCYbhkStpjE" ^
             -H "Accept: application/json"
         """
 
         echo '→ Back-end production deploy to Render...'
         bat """
-          curl -f -X POST "https://api.render.com/deploy/srv-d31s2kjipnbc73cko4cg?key=UvvpivLS7LI" ^
+          curl -k -f -X POST "https://api.render.com/deploy/srv-d31s2kjipnbc73cko4cg?key=UvvpivLS7LI" ^
             -H "Accept: application/json"
         """
       }
