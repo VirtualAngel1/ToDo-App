@@ -306,14 +306,13 @@ echo Proceeding with frontend tests.
             bat "docker compose -f \"${composeFile}\" down || exit 0"
             bat "docker compose -f \"${composeFile}\" up -d --build || exit 0"
 
-            bat 'ping -n 6 127.0.0.1 > nul && curl -f http://localhost:8085/health || exit 0'
+            bat 'ping -n 6 127.0.0.1 > nul && curl -f http://localhost:8086/health || exit 0'
           }
         }
       }
     }
 
     stage('6: Release to Production') {
-      when { branch 'main' }
       steps {
         script {
           catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
