@@ -25,7 +25,6 @@ pipeline {
             echo '→ Building Front-end...'
             dir('client') {
               bat 'npm ci'
-              stash name: 'client_node_modules', includes: 'node_modules/**'
               bat 'npm run build'
             }
 
@@ -33,7 +32,6 @@ pipeline {
               echo '→ Installing Node.js Back-end dependencies...'
               dir('server') {
                 bat 'npm ci'
-                stash name: 'server_node_modules', includes: 'node_modules/**'
               }
             } else {
               echo '↷ Skipping Node.js Back-end (server/package.json not found)'
