@@ -340,50 +340,51 @@ echo Proceeding with frontend tests.
       }
     }
 
-    stage('7: Monitoring') {
-      steps {
-        script {
-          catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
-            withCredentials([string(credentialsId: 'better-uptime-token', variable: 'BU_TOKEN')]) {
-              powershell '''
-                $ErrorActionPreference = "Stop"
+stage('7: Monitoring') {
+  steps {
+    script {
+      catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+        withCredentials([string(credentialsId: 'better-uptime-token', variable: 'BU_TOKEN')]) {
+          powershell '''
+            $ErrorActionPreference = "Stop"
 
-                $url = "https://todo-app-4g2e.onrender.com"
-                $headers = @{ "Authorization" = "Token token=$env:BU_TOKEN" }
+            $url = "https://todo-app-4g2e.onrender.com"
+            $headers = @{ "Authorization" = "Token token=$env:BU_TOKEN" }
 
-                Write-Host "→ Checking Better Uptime for open incidents on $url ..."
+            Write-Host "→ Checking Better Uptime for open incidents on $url ..."
 
-                try {
-                  $response = Invoke-RestMethod -Uri "https://api.betteruptime.com/api/v2/incidents?filter[status]=open&filter[monitor_url]=$url" -Headers $headers
-                  $count = $response.data.Count
+            try {
+              # Call Better Uptime API
+              $response = Invoke-RestMethod -Uri "https://api.betteruptime.com/api/v2/incidents?filter[status]=open&filter[monitor_url]=$url" -Headers $headers
 
-                  if ($count -gt 0) {
-                    Write-Host "❌ Better Uptime reports $count open incident(s)"
-                    foreach ($incident in $response.data) {
-                      Write-Host " - [$($incident.id)] $($incident.attributes.summary)"
-                    }
-                    exit 1
-                  } else {
-                    Write-Host "✅ No open incidents reported by Better Uptime"
-                  }
+              # Count open incidents
+              $count = $response.data.Count
+
+              if ($count -gt 0) {
+                Write-Host "❌ Better Uptime reports $count open incident(s)"
+                foreach ($incident in $response.data) {
+                  Write-Host " - [$($incident.id)] $($incident.attributes.summary)"
                 }
-                catch {
-                  Write-Host "⚠️ Monitoring check failed: $($_.Exception.Message)"
-                  exit 1
-                }
-              '''
+                exit 1
+              } else {
+                Write-Host "✅ No open incidents reported by Better Uptime"
+              }
             }
-          }
-        }
-      }
-      post {
-        unsuccessful {
-          slackSend channel: '#prod-alerts', color: 'danger',
-            message: "Monitoring warning/failure: Open incidents in Better Uptime."
+            catch {
+              Write-Host "⚠️ Monitoring check failed: $($_.Exception.Message)"
+              exit 1
+            }
+          '''
         }
       }
     }
-  } 
+  }
+  post {
+    unsuccessful {
+      echo "⚠️ Monitoring warning/failure: Open incidents in Better Uptime."
+    }
+  }
+}
 
   post {
     success  { echo '✅ Pipeline completed successfully.' }

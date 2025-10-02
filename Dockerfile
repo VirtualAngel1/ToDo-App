@@ -1,8 +1,12 @@
 FROM maven:3.9.6-eclipse-temurin-17 AS backend-builder
 WORKDIR /app/server
+
+RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates
+
 COPY server/pom.xml ./
 COPY server/src ./src
-RUN mvn clean package -DskipTests
+
+RUN mvn -U clean package -DskipTests
 
 FROM node:20-alpine AS frontend-builder
 WORKDIR /app/client
