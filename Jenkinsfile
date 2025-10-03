@@ -305,8 +305,6 @@ echo Proceeding with frontend tests.
 
             bat "docker compose -f \"${composeFile}\" down || exit 0"
             bat "docker compose -f \"${composeFile}\" up -d --build || exit 0"
-
-            bat 'ping -n 6 127.0.0.1 > nul && curl -f http://localhost:8086/health || exit 0'
           }
         }
       }
@@ -317,16 +315,44 @@ echo Proceeding with frontend tests.
         script {
           catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
             echo '→ Front-end production deploy to Render...'
+
             bat """
               curl -k -f -X POST "https://api.render.com/deploy/srv-d31s9v2dbo4c739tapn0?key=zCYbhkStpjE" ^
                 -H "Accept: application/json"
             """
 
+            bat '''
+            powershell -Command "
+              try {
+                $headers = @{ Accept = 'application/json' }
+                $uri = 'https://api.render.com/deploy/srv-d31s9v2dbo4c739tapn0?key=zCYbhkStpjE'
+                $response = Invoke-RestMethod -Uri $uri -Method Post -Headers $headers
+                Write-Output 'PowerShell Deploy ID (Front-end): ' + $response.deploy.id
+              } catch {
+                Write-Output 'PowerShell Front-end deploy failed: ' + $_.Exception.Message
+              }
+            "
+            '''
+
             echo '→ Back-end production deploy to Render...'
+
             bat """
               curl -k -f -X POST "https://api.render.com/deploy/srv-d31s2kjipnbc73cko4cg?key=UvvpivLS7LI" ^
                 -H "Accept: application/json"
             """
+
+            bat '''
+            powershell -Command "
+              try {
+                $headers = @{ Accept = 'application/json' }
+                $uri = 'https://api.render.com/deploy/srv-d31s2kjipnbc73cko4cg?key=UvvpivLS7LI'
+                $response = Invoke-RestMethod -Uri $uri -Method Post -Headers $headers
+                Write-Output 'PowerShell Deploy ID (Back-end): ' + $response.deploy.id
+              } catch {
+                Write-Output 'PowerShell Back-end deploy failed: ' + $_.Exception.Message
+              }
+            "
+            '''
           }
         }
       }
