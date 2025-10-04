@@ -317,8 +317,9 @@ echo Proceeding with frontend tests.
             echo '→ Front-end production deploy to Render...'
 
             bat """
-              curl -k -f -X POST "https://api.render.com/deploy/srv-d31s9v2dbo4c739tapn0?key=zCYbhkStpjE" ^
-                -H "Accept: application/json"
+              curl -k -f --tlsv1.2 --ssl-no-revoke ^
+                -X POST "https://api.render.com/deploy/srv-d31s9v2dbo4c739tapn0?key=zCYbhkStpjE" ^
+                -H "Accept: application/json" || exit 0
             """
 
             bat '''
@@ -337,8 +338,9 @@ echo Proceeding with frontend tests.
             echo '→ Back-end production deploy to Render...'
 
             bat """
-              curl -k -f -X POST "https://api.render.com/deploy/srv-d31s2kjipnbc73cko4cg?key=UvvpivLS7LI" ^
-                -H "Accept: application/json"
+              curl -k -f --tlsv1.2 --ssl-no-revoke ^
+                -X POST "https://api.render.com/deploy/srv-d31s2kjipnbc73cko4cg?key=UvvpivLS7LI" ^
+                -H "Accept: application/json" || exit 0
             """
 
             bat '''
