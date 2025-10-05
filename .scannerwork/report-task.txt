@@ -1,0 +1,7 @@
+organization=virtualangel
+projectKey=VirtualAngel1_ToDo-App
+serverUrl=https://sonarcloud.io
+serverVersion=8.0.0.68276
+dashboardUrl=https://sonarcloud.io/dashboard?id=VirtualAngel1_ToDo-App
+ceTaskId=AZm00PCVmJSqJRW3A976
+ceTaskUrl=https://sonarcloud.io/api/ce/task?id=AZm00PCVmJSqJRW3A976
