@@ -80,7 +80,7 @@ start "" /min java -jar target\\server-1.0.0.jar > backend.log 2>&1
 
               bat '''
 @echo off
-set RETRIES=100
+set RETRIES=150
 for /L %%i in (1,1,%RETRIES%) do (
   curl -s -o nul -w "%%{http_code}" http://127.0.0.1:8085/api/ping | findstr 200 >nul
   if not errorlevel 1 (
@@ -112,7 +112,7 @@ start "" /min cmd /c "npm start > frontend.log 2>&1"
 
               bat '''
 @echo off
-set RETRIES=120
+set RETRIES=150
 for /L %%i in (1,1,%RETRIES%) do (
   curl -s http://127.0.0.1:3500 | findstr "<title>To-Do App</title>" >nul
   if not errorlevel 1 (
