@@ -202,11 +202,15 @@ echo Proceeding with frontend tests.
             echo '→ Authenticating Snyk...'
             bat '.\\snyk.exe auth %SNYK_TOKEN%'
 
-            echo '→ Scanning Front-end with Snyk...'
-            bat '.\\snyk.exe test client --severity-threshold=high --json > snyk-frontend.json || exit 0'
+            dir('client') {
+              echo '→ Scanning Front-end with Snyk...'
+              bat '..\\snyk.exe test . --severity-threshold=high --json > ..\\snyk-frontend.json || exit 0'
+            }
 
-            echo '→ Scanning Back-end with Snyk...'
-            bat '.\\snyk.exe test server --severity-threshold=high --json > snyk-backend.json || exit 0'
+            dir('server') {
+              echo '→ Scanning Back-end with Snyk...'
+              bat '..\\snyk.exe test . --severity-threshold=high --json > ..\\snyk-backend.json || exit 0'
+            }
           }
         }
       }
